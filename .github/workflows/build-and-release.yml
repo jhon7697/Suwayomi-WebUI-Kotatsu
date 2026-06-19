@@ -1,0 +1,204 @@
+name: Build Docker Image & JAR Bundle
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Job 1: Build WebUI
+  # ============================================
+  build-webui:
+    name: Build WebUI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+
+      - name: Build WebUI
+        run: pnpm build
+
+      - name: Upload WebUI build
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-build
+          path: build/
+          retention-days: 7
+
+  # ============================================
+  # Job 2: Build JAR Bundle
+  # ============================================
+  build-jar-bundle:
+    name: Build JAR Bundle
+    runs-on: ubuntu-latest
+    needs: build-webui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download WebUI build
+        uses: actions/download-artifact@v4
+        with:
+          name: webui-build
+          path: build/
+
+      - name: Download Suwayomi-Server JAR
+        run: |
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/Suwayomi/Suwayomi-Server/releases/latest \
+            | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' | head -1)
+          echo "Downloading: $DOWNLOAD_URL"
+          curl -L -o suwayomi-server.jar "$DOWNLOAD_URL"
+
+      - name: Create bundle
+        run: |
+          mkdir -p kotatsu-web-bundle
+          cp suwayomi-server.jar kotatsu-web-bundle/
+          cp -r build kotatsu-web-bundle/webui
+          cp docker-entrypoint.sh kotatsu-web-bundle/
+          
+          # Create run script
+          cat > kotatsu-web-bundle/run.sh << 'EOF'
+          #!/bin/bash
+          SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+          TACHIDESK_DIR="${TACHIDESK_DIR:-$HOME/.local/share/Tachidesk}"
+          WEBUI_DIR="$TACHIDESK_DIR/webUI/Suwayomi-WebUI"
+          mkdir -p "$(dirname "$WEBUI_DIR")"
+          [ -d "$WEBUI_DIR" ] && [ ! -L "$WEBUI_DIR" ] && rm -rf "$WEBUI_DIR"
+          [ ! -L "$WEBUI_DIR" ] && ln -sf "$SCRIPT_DIR/webui" "$WEBUI_DIR"
+          echo "🦞 Starting Kotatsu Web on http://localhost:${PORT:-4567}"
+          exec java ${JAVA_OPTS:--Xmx512m} \
+            -Dsuwayomi.server.webUIEnabled=true \
+            -Dsuwayomi.server.webUIFlavor=Custom \
+            -Dsuwayomi.server.webUIInterface=browser \
+            -Dsuwayomi.server.port="${PORT:-4567}" \
+            -Dsuwayomi.server.systemTrayEnabled=false \
+            -jar "$SCRIPT_DIR/suwayomi-server.jar"
+          EOF
+          chmod +x kotatsu-web-bundle/run.sh
+          
+          # Create Windows script
+          cat > kotatsu-web-bundle/run.bat << 'EOF'
+          @echo off
+          echo Starting Kotatsu Web on http://localhost:4567
+          java -Xmx512m -Dsuwayomi.server.webUIEnabled=true -Dsuwayomi.server.webUIFlavor=Custom -Dsuwayomi.server.webUIInterface=browser -Dsuwayomi.server.port=4567 -Dsuwayomi.server.systemTrayEnabled=false -jar "%~dp0suwayomi-server.jar"
+          EOF
+
+      - name: Zip bundle
+        run: |
+          cd kotatsu-web-bundle
+          zip -9 -r ../kotatsu-web-bundle.zip .
+
+      - name: Upload JAR bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotatsu-web-bundle
+          path: kotatsu-web-bundle.zip
+          retention-days: 30
+
+  # ============================================
+  # Job 3: Build & Push Docker Image
+  # ============================================
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # ============================================
+  # Job 4: Create Release (on tags only)
+  # ============================================
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-jar-bundle, build-docker]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download JAR bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: kotatsu-web-bundle
+          path: .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: kotatsu-web-bundle.zip
+          generate_release_notes: true
+          body: |
+            ## 🦞 Kotatsu Web Release
+            
+            ### Docker
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ```
+            
+            ### JAR Bundle
+            Download `kotatsu-web-bundle.zip`, extract, and run:
+            ```bash
+            # Linux/Mac
+            ./run.sh
+            
+            # Windows
+            run.bat
+            ```
+            
+            Requires Java 21+. Open http://localhost:4567 after starting.
