@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  kotatsu:
+    build: .
+    container_name: kotatsu-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4567}:4567"
+    volumes:
+      - kotatsu-data:/home/suwayomi/.local/share/Tachidesk
+    environment:
+      - TZ=${TZ:-UTC}
+      - JAVA_OPTS=${JAVA_OPTS:--Xmx512m}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4567/api/v1/settings/about"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  kotatsu-data:
+    driver: local

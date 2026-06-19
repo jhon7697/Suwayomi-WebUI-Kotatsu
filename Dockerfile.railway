@@ -1,0 +1,38 @@
+# Railway-specific Dockerfile
+# Railway provides PORT env var - we use it
+
+# Stage 1: Build WebUI
+FROM node:24-alpine AS webui-builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
+RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+COPY . .
+RUN pnpm build
+
+# Stage 2: Get Suwayomi Server
+FROM eclipse-temurin:21-jre-alpine AS server-fetcher
+RUN apk add --no-cache curl jq
+RUN DOWNLOAD_URL=$(curl -s https://api.github.com/repos/Suwayomi/Suwayomi-Server/releases/latest \
+      | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' | head -1) && \
+    curl -L -o /suwayomi-server.jar "$DOWNLOAD_URL"
+
+# Stage 3: Runtime
+FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache tzdata curl tini
+RUN addgroup -g 1000 suwayomi && \
+    adduser -u 1000 -G suwayomi -h /home/suwayomi -D suwayomi
+WORKDIR /home/suwayomi
+COPY --from=server-fetcher /suwayomi-server.jar ./suwayomi-server.jar
+COPY --from=webui-builder /app/build ./webui
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && \
+    mkdir -p /home/suwayomi/.local/share/Tachidesk && \
+    chown -R suwayomi:suwayomi /home/suwayomi
+
+EXPOSE ${PORT:-4567}
+ENV TZ=UTC
+ENV JAVA_OPTS="-Xmx512m"
+USER suwayomi
+ENTRYPOINT ["tini", "--"]
+CMD ["/docker-entrypoint.sh"]
