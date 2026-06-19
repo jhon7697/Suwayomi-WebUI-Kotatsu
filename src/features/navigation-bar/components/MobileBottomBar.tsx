@@ -9,13 +9,13 @@
 import Paper from '@mui/material/Paper';
 import type { CSSProperties } from 'react';
 import { useCallback, useLayoutEffect, useRef } from 'react';
-import {} from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { useResizeObserver } from '@/base/hooks/useResizeObserver.tsx';
 import { useNavBarContext } from '@/features/navigation-bar/NavbarContext.tsx';
 import type { NavbarItem } from '@/features/navigation-bar/NavigationBar.types.ts';
 import { NavigationBarItem } from '@/features/navigation-bar/components/NavigationBarItem.tsx';
 import Stack from '@mui/material/Stack';
+import { KOTATSU_COLORS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
 
 export const MobileBottomBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) => {
     const theme = useTheme();
@@ -31,6 +31,7 @@ export const MobileBottomBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) 
     return (
         <Paper
             ref={ref}
+            elevation={0}
             sx={{
                 position: 'fixed',
                 bottom: 0,
@@ -40,15 +41,16 @@ export const MobileBottomBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) 
                 pl: 'env(safe-area-inset-left)',
                 pr: 'env(safe-area-inset-right)',
                 zIndex: theme.zIndex.drawer - 1,
+                backgroundColor: KOTATSU_COLORS.background,
+                borderTop: `1px solid ${KOTATSU_COLORS.surface}`,
             }}
             style={{
                 ...(theme.applyStyles('dark', {
                     '--Paper-overlay': 'unset',
                 }) as CSSProperties),
             }}
-            elevation={3}
         >
-            <Stack sx={{ flexDirection: 'row' }}>
+            <Stack sx={{ flexDirection: 'row', justifyContent: 'space-around', py: 0.5 }}>
                 {navBarItems.map((item) => (
                     <NavigationBarItem
                         key={item.path}
@@ -56,7 +58,9 @@ export const MobileBottomBar = ({ navBarItems }: { navBarItems: NavbarItem[] }) 
                         slots={{
                             listItemLink: {
                                 sx: {
-                                    py: 1,
+                                    py: 0.75,
+                                    flex: 1,
+                                    justifyContent: 'center',
                                 },
                             },
                         }}

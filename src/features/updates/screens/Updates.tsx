@@ -12,7 +12,6 @@ import { useLingui } from '@lingui/react/macro';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { LoadingPlaceholder } from '@/base/components/feedback/LoadingPlaceholder.tsx';
 import { EmptyViewAbsoluteCentered } from '@/base/components/feedback/EmptyViewAbsoluteCentered.tsx';
-import { UpdateChecker } from '@/features/updates/components/UpdateChecker.tsx';
 import { StyledGroupedVirtuoso } from '@/base/components/virtuoso/StyledGroupedVirtuoso.tsx';
 import { StyledGroupHeader } from '@/base/components/virtuoso/StyledGroupHeader.tsx';
 import { StyledGroupItemWrapper } from '@/base/components/virtuoso/StyledGroupItemWrapper.tsx';
@@ -26,10 +25,17 @@ import { Chapters } from '@/features/chapter/services/Chapters.ts';
 import { useAppTitleAndAction } from '@/features/navigation-bar/hooks/useAppTitleAndAction.ts';
 import { GROUPED_VIRTUOSO_Z_INDEX } from '@/lib/virtuoso/Virtuoso.constants.ts';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
+import { KotatsuScreenLayout } from '@/features/kotatsu-ui/components/KotatsuScreenLayout.tsx';
+import { useKotatsuMainScreen } from '@/features/kotatsu-ui/hooks/useKotatsuMainScreen.ts';
+import { KOTATSU_COLORS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
+import { UpdateChecker } from '@/features/updates/components/UpdateChecker.tsx';
+import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 
 export const Updates: React.FC = () => {
     const { t } = useLingui();
     const { appBarHeight } = useNavBarContext();
+    const { openSettings } = useKotatsuMainScreen();
+    const isMobileWidth = MediaQuery.useIsMobileWidth();
 
     const {
         data: chapterUpdateData,
@@ -65,15 +71,12 @@ export const Updates: React.FC = () => {
     }, [lastUpdateTimestampCompRef.current]);
 
     const { data: lastUpdateTimestampData } = requestManager.useGetLastGlobalUpdateTimestamp({
-        /**
-         * The {@link UpdateChecker} is responsible for updating the timestamp
-         */
         fetchPolicy: 'cache-only',
     });
     const lastUpdateTimestamp = lastUpdateTimestampData?.lastUpdateTimestamp.timestamp;
     const date = lastUpdateTimestamp ? dateTimeFormatter.format(+lastUpdateTimestamp) : '-';
 
-    useAppTitleAndAction(t`Updates`, <UpdateChecker />);
+    useAppTitleAndAction(t`Updates`, !isMobileWidth ? <UpdateChecker /> : null);
 
     const loadMore = useCallback(() => {
         if (!hasNextPage) {
@@ -83,58 +86,72 @@ export const Updates: React.FC = () => {
         fetchMore({ variables: { offset: updateEntries.length } });
     }, [hasNextPage, endCursor]);
 
-    if (error) {
-        return (
-            <EmptyViewAbsoluteCentered
-                message={t`Unable to load data`}
-                messageExtra={getErrorMessage(error)}
-                retry={() => refetch().catch(defaultPromiseErrorHandler('Updates::refetch'))}
-            />
-        );
-    }
+    const content = (() => {
+        if (error) {
+            return (
+                <EmptyViewAbsoluteCentered
+                    message={t`Unable to load data`}
+                    messageExtra={getErrorMessage(error)}
+                    retry={() => refetch().catch(defaultPromiseErrorHandler('Updates::refetch'))}
+                />
+            );
+        }
 
-    if (!isLoading && updateEntries.length === 0) {
-        return <EmptyViewAbsoluteCentered message={t`You don't have any updates yet.`} />;
-    }
+        if (!isLoading && updateEntries.length === 0) {
+            return <EmptyViewAbsoluteCentered message={t`You don't have any updates yet.`} />;
+        }
+
+        return (
+            <>
+                {!isMobileWidth && (
+                    <Typography
+                        ref={lastUpdateTimestampCompRef}
+                        sx={{
+                            position: 'sticky',
+                            top: appBarHeight,
+                            zIndex: GROUPED_VIRTUOSO_Z_INDEX,
+                            backgroundColor: 'background.default',
+                            marginLeft: '10px',
+                            paddingTop: (theme) => ({ [theme.breakpoints.up('sm')]: { paddingTop: '6px' } }),
+                        }}
+                    >
+                        {t`Last update: ${date}`}
+                    </Typography>
+                )}
+                <StyledGroupedVirtuoso
+                    persistKey="updates"
+                    heightToSubtract={isMobileWidth ? 0 : lastUpdateTimestampCompHeight}
+                    components={{
+                        Footer: () => (isLoading ? <LoadingPlaceholder usePadding /> : null),
+                    }}
+                    overscan={window.innerHeight * 0.5}
+                    endReached={loadMore}
+                    groupCounts={groupCounts}
+                    groupContent={(index) => (
+                        <StyledGroupHeader isFirstItem={index === 0}>
+                            <Typography
+                                variant="h6"
+                                component="h2"
+                                sx={{ color: KOTATSU_COLORS.textPrimary, fontWeight: 600, px: 2 }}
+                            >
+                                {groupedUpdates[index][VirtuosoUtil.GROUP]}
+                            </Typography>
+                        </StyledGroupHeader>
+                    )}
+                    computeItemKey={computeItemKey}
+                    itemContent={(index) => (
+                        <StyledGroupItemWrapper>
+                            <ChapterUpdateCard chapter={updateEntries[index]} />
+                        </StyledGroupItemWrapper>
+                    )}
+                />
+            </>
+        );
+    })();
 
     return (
-        <>
-            <Typography
-                ref={lastUpdateTimestampCompRef}
-                sx={{
-                    position: 'sticky',
-                    top: appBarHeight,
-                    zIndex: GROUPED_VIRTUOSO_Z_INDEX,
-                    backgroundColor: 'background.default',
-                    marginLeft: '10px',
-                    paddingTop: (theme) => ({ [theme.breakpoints.up('sm')]: { paddingTop: '6px' } }),
-                }}
-            >
-                {t`Last update: ${date}`}
-            </Typography>
-            <StyledGroupedVirtuoso
-                persistKey="updates"
-                heightToSubtract={lastUpdateTimestampCompHeight}
-                components={{
-                    Footer: () => (isLoading ? <LoadingPlaceholder usePadding /> : null),
-                }}
-                overscan={window.innerHeight * 0.5}
-                endReached={loadMore}
-                groupCounts={groupCounts}
-                groupContent={(index) => (
-                    <StyledGroupHeader isFirstItem={index === 0}>
-                        <Typography variant="h5" component="h2">
-                            {groupedUpdates[index][VirtuosoUtil.GROUP]}
-                        </Typography>
-                    </StyledGroupHeader>
-                )}
-                computeItemKey={computeItemKey}
-                itemContent={(index) => (
-                    <StyledGroupItemWrapper>
-                        <ChapterUpdateCard chapter={updateEntries[index]} />
-                    </StyledGroupItemWrapper>
-                )}
-            />
-        </>
+        <KotatsuScreenLayout onMenuClick={openSettings} enableGlobalSearch={false}>
+            {content}
+        </KotatsuScreenLayout>
     );
 };

@@ -7,7 +7,7 @@
  */
 
 import Typography from '@mui/material/Typography';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { LoadingPlaceholder } from '@/base/components/feedback/LoadingPlaceholder.tsx';
@@ -22,9 +22,16 @@ import { ChapterHistoryCard } from '@/features/history/components/ChapterHistory
 import { Chapters } from '@/features/chapter/services/Chapters.ts';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
+import { KotatsuScreenLayout } from '@/features/kotatsu-ui/components/KotatsuScreenLayout.tsx';
+import { KotatsuContinueFab } from '@/features/kotatsu-ui/components/KotatsuContinueFab.tsx';
+import { useKotatsuMainScreen } from '@/features/kotatsu-ui/hooks/useKotatsuMainScreen.ts';
+import type { KotatsuFilterId } from '@/features/kotatsu-ui/components/KotatsuFilterChips.tsx';
+import { KOTATSU_COLORS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
 
 export const History: React.FC = () => {
     const { t } = useLingui();
+    const { openSettings } = useKotatsuMainScreen();
+    const [activeFilters, setActiveFilters] = useState<KotatsuFilterId[]>([]);
 
     useAppTitle(t`History`);
 
@@ -63,42 +70,64 @@ export const History: React.FC = () => {
         fetchMore({ variables: { offset: readEntries.length } });
     }, [hasNextPage, endCursor]);
 
-    if (error) {
+    const handleFilterToggle = useCallback((filter: KotatsuFilterId) => {
+        setActiveFilters((prev) => (prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]));
+    }, []);
+
+    const content = (() => {
+        if (error) {
+            return (
+                <EmptyViewAbsoluteCentered
+                    message={t`Unable to load data`}
+                    messageExtra={getErrorMessage(error)}
+                    retry={() => refetch().catch(defaultPromiseErrorHandler('History::refetch'))}
+                />
+            );
+        }
+
+        if (!isLoading && readEntries.length === 0) {
+            return <EmptyViewAbsoluteCentered message={t`You have not read any series yet.`} />;
+        }
+
         return (
-            <EmptyViewAbsoluteCentered
-                message={t`Unable to load data`}
-                messageExtra={getErrorMessage(error)}
-                retry={() => refetch().catch(defaultPromiseErrorHandler('History::refetch'))}
+            <StyledGroupedVirtuoso
+                persistKey="history"
+                components={{
+                    Footer: () => (isLoading ? <LoadingPlaceholder usePadding /> : null),
+                }}
+                overscan={window.innerHeight * 0.5}
+                endReached={loadMore}
+                groupCounts={groupCounts}
+                groupContent={(index) => (
+                    <StyledGroupHeader isFirstItem={index === 0}>
+                        <Typography
+                            variant="h6"
+                            component="h2"
+                            sx={{ color: KOTATSU_COLORS.textPrimary, fontWeight: 600, px: 2 }}
+                        >
+                            {groupedHistory[index][VirtuosoUtil.GROUP]}
+                        </Typography>
+                    </StyledGroupHeader>
+                )}
+                computeItemKey={computeItemKey}
+                itemContent={(index) => (
+                    <StyledGroupItemWrapper>
+                        <ChapterHistoryCard chapter={readEntries[index]} />
+                    </StyledGroupItemWrapper>
+                )}
             />
         );
-    }
-
-    if (!isLoading && readEntries.length === 0) {
-        return <EmptyViewAbsoluteCentered message={t`You have not read any series yet.`} />;
-    }
+    })();
 
     return (
-        <StyledGroupedVirtuoso
-            persistKey="history"
-            components={{
-                Footer: () => (isLoading ? <LoadingPlaceholder usePadding /> : null),
-            }}
-            overscan={window.innerHeight * 0.5}
-            endReached={loadMore}
-            groupCounts={groupCounts}
-            groupContent={(index) => (
-                <StyledGroupHeader isFirstItem={index === 0}>
-                    <Typography variant="h5" component="h2">
-                        {groupedHistory[index][VirtuosoUtil.GROUP]}
-                    </Typography>
-                </StyledGroupHeader>
-            )}
-            computeItemKey={computeItemKey}
-            itemContent={(index) => (
-                <StyledGroupItemWrapper>
-                    <ChapterHistoryCard chapter={readEntries[index]} />
-                </StyledGroupItemWrapper>
-            )}
-        />
+        <KotatsuScreenLayout
+            showFilters
+            activeFilters={activeFilters}
+            onFilterToggle={handleFilterToggle}
+            onMenuClick={openSettings}
+        >
+            {content}
+            <KotatsuContinueFab />
+        </KotatsuScreenLayout>
     );
 };

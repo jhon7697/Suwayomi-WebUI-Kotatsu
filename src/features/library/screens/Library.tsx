@@ -10,6 +10,7 @@ import type { ChipProps } from '@mui/material/Chip';
 import Chip from '@mui/material/Chip';
 import Tab from '@mui/material/Tab';
 import { styled, useTheme } from '@mui/material/styles';
+import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryParam, NumberParam, StringParam } from 'use-query-params';
 import Button from '@mui/material/Button';
@@ -51,6 +52,11 @@ import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { SearchParam } from '@/base/Base.types.ts';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
 import type { MangaIdInfo } from '@/features/manga/Manga.types.ts';
+import { KotatsuScreenLayout } from '@/features/kotatsu-ui/components/KotatsuScreenLayout.tsx';
+import { useKotatsuMainScreen } from '@/features/kotatsu-ui/hooks/useKotatsuMainScreen.ts';
+import type { KotatsuFilterId } from '@/features/kotatsu-ui/components/KotatsuFilterChips.tsx';
+import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
+import { KOTATSU_COLORS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
 
 const TitleWithSizeTag = styled('span')({
     display: 'flex',
@@ -64,6 +70,9 @@ const TitleSizeTag = ({ sx, ...props }: ChipProps) => (
 export function Library() {
     const { t } = useLingui();
     const theme = useTheme();
+    const isMobileWidth = MediaQuery.useIsMobileWidth();
+    const { openSettings } = useKotatsuMainScreen();
+    const [activeFilters, setActiveFilters] = useState<KotatsuFilterId[]>([]);
 
     const {
         settings: { showTabSize },
@@ -191,7 +200,7 @@ export function Library() {
 
     useAppTitle(
         <TitleWithSizeTag>
-            {t`Library`}
+            {t`Favorites`}
             {showTabSize && (
                 <TitleSizeTag
                     sx={{ ...theme.applyStyles('light', { backgroundColor: 'background.paper' }) }}
@@ -199,12 +208,12 @@ export function Library() {
                 />
             )}
         </TitleWithSizeTag>,
-        t`Library`,
+        t`Favorites`,
         [t, showTabSize, librarySize],
     );
     useAppAction(
         <>
-            {!isSelectModeActive && activeTab && (
+            {!isMobileWidth && !isSelectModeActive && activeTab && (
                 <>
                     <AppbarSearch />
                     <LibraryToolbarMenu category={activeTab} />
@@ -234,9 +243,57 @@ export function Library() {
         [isSelectModeActive, areNoItemsSelected, areAllItemsSelected, activeTab, mangas.length],
     );
 
+    const handleFilterToggle = useCallback((filter: KotatsuFilterId) => {
+        setActiveFilters((prev) => (prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]));
+    }, []);
+
     const handleTabChange = (newTab: number) => {
         setTabSearchParam(newTab);
     };
+
+    const kotatsuTabsHeader =
+        tabs.length > 1 ? (
+            <TabsMenu
+                value={activeTab.id}
+                onChange={(_, newTab) => handleTabChange(newTab)}
+                sx={{
+                    px: 1,
+                    '& .MuiTab-root': {
+                        color: KOTATSU_COLORS.textSecondary,
+                        textTransform: 'none',
+                        minHeight: 44,
+                    },
+                    '& .Mui-selected': {
+                        color: `${KOTATSU_COLORS.textPrimary} !important`,
+                    },
+                    '& .MuiTabs-indicator': {
+                        backgroundColor: KOTATSU_COLORS.textPrimary,
+                        height: 3,
+                        borderRadius: 2,
+                    },
+                }}
+            >
+                {tabs.map((tab) => (
+                    <Tab sx={{ flexGrow: 1, maxWidth: 'unset' }} key={tab.id} label={tab.name} value={tab.id} />
+                ))}
+            </TabsMenu>
+        ) : null;
+
+    const wrapKotatsu = (content: ReactNode) =>
+        isMobileWidth ? (
+            <KotatsuScreenLayout
+                showFilters
+                activeFilters={activeFilters}
+                onFilterToggle={handleFilterToggle}
+                onMenuClick={openSettings}
+                enableGlobalSearch={false}
+                headerExtra={kotatsuTabsHeader}
+            >
+                {content}
+            </KotatsuScreenLayout>
+        ) : (
+            content
+        );
 
     if (tabsError != null || librarySizeResponse.error) {
         return (
@@ -265,11 +322,10 @@ export function Library() {
     }
 
     if (tabs.length === 1) {
-        return (
+        return wrapKotatsu(
             <>
                 {triggerGlobalSearchButton}
                 <LibraryMangaGrid
-                    // the key needs to include filters and query to force a re-render of the virtuoso grid to prevent https://github.com/petyosi/react-virtuoso/issues/1242
                     key={filterKey}
                     mangas={mangas}
                     message={mangaError ? t`Could not load manga` : t`Your library is empty`}
@@ -282,33 +338,34 @@ export function Library() {
                     retry={mangaError && retryFetchCategoryMangas}
                 />
                 {selectionFab}
-            </>
+            </>,
         );
     }
 
-    return (
+    return wrapKotatsu(
         <TabsWrapper>
-            <TabsMenu value={activeTab.id} onChange={(e, newTab) => handleTabChange(newTab)}>
-                {tabs.map((tab) => (
-                    <Tab
-                        sx={{ flexGrow: 1, maxWidth: 'unset' }}
-                        key={tab.id}
-                        label={
-                            <TitleWithSizeTag>
-                                {tab.name}
-                                {showTabSize ? <TitleSizeTag label={tab.mangas.totalCount} /> : null}
-                            </TitleWithSizeTag>
-                        }
-                        value={tab.id}
-                    />
-                ))}
-            </TabsMenu>
+            {!isMobileWidth && (
+                <TabsMenu value={activeTab.id} onChange={(e, newTab) => handleTabChange(newTab)}>
+                    {tabs.map((tab) => (
+                        <Tab
+                            sx={{ flexGrow: 1, maxWidth: 'unset' }}
+                            key={tab.id}
+                            label={
+                                <TitleWithSizeTag>
+                                    {tab.name}
+                                    {showTabSize ? <TitleSizeTag label={tab.mangas.totalCount} /> : null}
+                                </TitleWithSizeTag>
+                            }
+                            value={tab.id}
+                        />
+                    ))}
+                </TabsMenu>
+            )}
             {triggerGlobalSearchButton}
             {tabs.map((tab) => (
                 <TabPanel key={tab.order} index={tab.order} currentIndex={activeTab.order}>
                     {tab === activeTab && (
                         <LibraryMangaGrid
-                            // the key needs to include filters and query to force a re-render of the virtuoso grid to prevent https://github.com/petyosi/react-virtuoso/issues/1242
                             key={filterKey}
                             mangas={mangas}
                             message={mangaError ? t`Could not load manga` : t`The category is empty`}
@@ -324,6 +381,6 @@ export function Library() {
                 </TabPanel>
             ))}
             {selectionFab}
-        </TabsWrapper>
+        </TabsWrapper>,
     );
 }

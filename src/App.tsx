@@ -277,7 +277,12 @@ const MainApp = () => {
                         {/* General Routes */}
                         <Route
                             path={AppRoutes.root.match}
-                            element={<Navigate to={AppRoutes.library.path()} replace />}
+                            element={
+                                <Navigate
+                                    to={hideHistory ? AppRoutes.library.path() : AppRoutes.history.path}
+                                    replace
+                                />
+                            }
                         />
                         <Route
                             path={AppRoutes.matchAll.match}

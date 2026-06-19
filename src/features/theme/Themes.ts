@@ -380,6 +380,42 @@ export const themes = {
             },
         },
     },
+    kotatsu: {
+        isCustom: false,
+        getName: () => t`Kotatsu`,
+        muiTheme: {
+            colorSchemes: {
+                light: {
+                    palette: {
+                        primary: {
+                            main: '#6D41C8',
+                        },
+                        secondary: {
+                            main: '#b8c5d6',
+                        },
+                        background: {
+                            paper: '#ffffff',
+                            default: '#f5f5f5',
+                        },
+                    },
+                },
+                dark: {
+                    palette: {
+                        primary: {
+                            main: '#c4b5fd',
+                        },
+                        secondary: {
+                            main: '#b8c5d6',
+                        },
+                        background: {
+                            paper: '#1a1a1a',
+                            default: '#000000',
+                        },
+                    },
+                },
+            },
+        },
+    },
     'ying and yang': {
         isCustom: false,
         getName: () => t`Ying & Yang`,

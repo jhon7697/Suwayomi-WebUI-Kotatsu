@@ -6,47 +6,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
-import CollectionsOutlinedBookmarkIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
-import NewReleasesIcon from '@mui/icons-material/NewReleases';
-import NewReleasesOutlinedIcon from '@mui/icons-material/NewReleasesOutlined';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import RssFeedIcon from '@mui/icons-material/RssFeed';
+import RssFeedOutlinedIcon from '@mui/icons-material/RssFeedOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import GetAppOutlinedIcon from '@mui/icons-material/GetAppOutlined';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InfoIcon from '@mui/icons-material/Info';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useLingui } from '@lingui/react/macro';
 import { msg, plural } from '@lingui/core/macro';
 import type { NavbarItem } from '@/features/navigation-bar/NavigationBar.types.ts';
 import { NavBarItemMoreGroup } from '@/features/navigation-bar/NavigationBar.types.ts';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
-import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
 import { DownloaderState } from '@/lib/graphql/generated/graphql-base.types.ts';
 
 type RestrictedNavBarItem<Show extends NavbarItem['show']> = Omit<NavbarItem, 'show'> & { show: Show };
 
 const NAVIGATION_BAR_BASE_ITEMS = [
-    {
-        path: AppRoutes.library.path() as RestrictedNavBarItem<'both'>['path'],
-        title: msg`Library`,
-        SelectedIconComponent: CollectionsBookmarkIcon,
-        IconComponent: CollectionsOutlinedBookmarkIcon,
-        show: 'both',
-        moreGroup: NavBarItemMoreGroup.GENERAL,
-    },
-    {
-        path: AppRoutes.updates.path,
-        title: msg`Updates`,
-        SelectedIconComponent: NewReleasesIcon,
-        IconComponent: NewReleasesOutlinedIcon,
-        show: 'both',
-        moreGroup: NavBarItemMoreGroup.GENERAL,
-    },
     {
         path: AppRoutes.history.path,
         title: msg`History`,
@@ -56,32 +41,43 @@ const NAVIGATION_BAR_BASE_ITEMS = [
         moreGroup: NavBarItemMoreGroup.GENERAL,
     },
     {
+        path: AppRoutes.library.path() as RestrictedNavBarItem<'both'>['path'],
+        title: msg`Favorites`,
+        SelectedIconComponent: FavoriteIcon,
+        IconComponent: FavoriteBorderIcon,
+        show: 'both',
+        moreGroup: NavBarItemMoreGroup.GENERAL,
+    },
+    {
         path: AppRoutes.browse.path() as RestrictedNavBarItem<'both'>['path'],
-        title: msg`Browse`,
+        title: msg`Explore`,
         SelectedIconComponent: ExploreIcon,
         IconComponent: ExploreOutlinedIcon,
         show: 'both',
         moreGroup: NavBarItemMoreGroup.GENERAL,
+    },
+    {
+        path: AppRoutes.updates.path,
+        title: msg`Updates`,
+        SelectedIconComponent: RssFeedIcon,
+        IconComponent: RssFeedOutlinedIcon,
+        show: 'both',
+        moreGroup: NavBarItemMoreGroup.GENERAL,
         useBadge: () => {
-            const { data } = requestManager.useGetExtensionList({ fetchPolicy: 'cache-only' });
+            const { data } = requestManager.useGetRecentlyUpdatedChapters(undefined, {
+                fetchPolicy: 'cache-and-network',
+            });
+            const count = data?.chapters.totalCount ?? 0;
 
-            const extensions = data?.extensions.nodes ?? STABLE_EMPTY_ARRAY;
-            const availableUpdates = extensions.filter(
-                (extension) => extension.hasUpdate && !extension.isObsolete,
-            ).length;
-
-            if (!availableUpdates) {
-                return {
-                    count: availableUpdates,
-                    title: '',
-                };
+            if (!count) {
+                return { count: 0, title: '' };
             }
 
             return {
-                count: availableUpdates,
-                title: plural(availableUpdates, {
-                    one: '# update available',
-                    other: '# updates available',
+                count,
+                title: plural(count, {
+                    one: '# update',
+                    other: '# updates',
                 }),
             };
         },
@@ -138,10 +134,10 @@ const NAVIGATION_BAR_DESKTOP_ITEMS = [
 
 export const NAVIGATION_BAR_MOBILE_ITEMS = [
     {
-        path: AppRoutes.more.path,
-        title: msg`More`,
-        SelectedIconComponent: MoreHorizIcon,
-        IconComponent: MoreHorizIcon,
+        path: AppRoutes.settings.path,
+        title: msg`Suggestions`,
+        SelectedIconComponent: LightbulbIcon,
+        IconComponent: LightbulbOutlinedIcon,
         show: 'mobile',
         moreGroup: NavBarItemMoreGroup.GENERAL,
     },
@@ -151,4 +147,15 @@ export const NAVIGATION_BAR_ITEMS = [
     ...NAVIGATION_BAR_BASE_ITEMS,
     ...NAVIGATION_BAR_DESKTOP_ITEMS,
     ...NAVIGATION_BAR_MOBILE_ITEMS,
+] as const satisfies NavbarItem[];
+
+export const KOTATSU_HIDDEN_MORE_ITEMS = [
+    {
+        path: AppRoutes.settings.children.categories.path,
+        title: msg`Categories`,
+        SelectedIconComponent: ListAltIcon,
+        IconComponent: ListAltIcon,
+        show: 'both',
+        moreGroup: NavBarItemMoreGroup.HIDDEN_ITEM,
+    },
 ] as const satisfies NavbarItem[];

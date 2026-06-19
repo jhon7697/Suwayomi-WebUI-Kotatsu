@@ -18,14 +18,14 @@ import { TabsMenu } from '@/base/components/tabs/TabsMenu.tsx';
 import { useResizeObserver } from '@/base/hooks/useResizeObserver.tsx';
 import { useAppTitle } from '@/features/navigation-bar/hooks/useAppTitle.ts';
 import { BrowseTab } from '@/features/browse/Browse.types.ts';
+import { KotatsuExplore } from '@/features/kotatsu-ui/screens/KotatsuExplore.tsx';
+import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 import { GROUPED_VIRTUOSO_Z_INDEX } from '@/lib/virtuoso/Virtuoso.constants.ts';
 import { SearchParam } from '@/base/Base.types.ts';
 import { Migration } from '@/features/migration/screens/Migration.tsx';
 
-export function Browse() {
+const DesktopBrowse = () => {
     const { t } = useLingui();
-    useAppTitle(t`Browse`);
-
     const tabsMenuRef = useRef<HTMLDivElement | null>(null);
     const [tabsMenuHeight, setTabsMenuHeight] = useState(0);
     useResizeObserver(
@@ -67,4 +67,17 @@ export function Browse() {
             </TabPanel>
         </TabsWrapper>
     );
+};
+
+export function Browse() {
+    const { t } = useLingui();
+    const isMobileWidth = MediaQuery.useIsMobileWidth();
+
+    useAppTitle(t`Explore`);
+
+    if (isMobileWidth) {
+        return <KotatsuExplore />;
+    }
+
+    return <DesktopBrowse />;
 }

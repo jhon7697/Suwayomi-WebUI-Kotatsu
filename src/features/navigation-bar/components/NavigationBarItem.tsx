@@ -9,18 +9,18 @@
 import type { NavbarItem } from '@/features/navigation-bar/NavigationBar.types.ts';
 import { ListItemLink } from '@/base/components/lists/ListItemLink.tsx';
 import { CustomTooltip } from '@/base/components/CustomTooltip.tsx';
-import { TypographyMaxLines } from '@/base/components/texts/TypographyMaxLines.tsx';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import type { ComponentProps } from 'react';
 import { useMemo } from 'react';
 import ListItem from '@mui/material/ListItem';
 import Badge from '@mui/material/Badge';
-import Typography from '@mui/material/Typography';
 import { useLingui } from '@lingui/react/macro';
 import { useNavBarContext } from '@/features/navigation-bar/NavbarContext.tsx';
+import Box from '@mui/material/Box';
+import { KOTATSU_COLORS, KOTATSU_RADIUS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
+import { MediaQuery } from '@/base/utils/MediaQuery.tsx';
 
 export const NavigationBarItem = ({
     path,
@@ -41,6 +41,7 @@ export const NavigationBarItem = ({
     const { isCollapsed: isCollapsedContext } = useNavBarContext();
     const theme = useTheme();
     const badgeInfo = useBadge?.();
+    const isMobileWidth = MediaQuery.useIsMobileWidth();
 
     const isCollapsed = forceCollapsed ?? isCollapsedContext;
 
@@ -55,11 +56,17 @@ export const NavigationBarItem = ({
         [isCollapsed],
     );
 
+    const kotatsuMobileStyle = isMobileWidth && isCollapsed;
+
     return (
         <ListItemLink
             {...slots?.listItemLink}
             selected={!isCollapsed && isActive}
-            sx={{ p: 0, m: 0, ...slots?.listItemLink?.sx }}
+            sx={{
+                p: 0,
+                m: 0,
+                ...slots?.listItemLink?.sx,
+            }}
             to={path}
         >
             <CustomTooltip
@@ -74,42 +81,43 @@ export const NavigationBarItem = ({
             >
                 <ListItem sx={listItemProps}>
                     <ListItemIcon sx={listItemIconProps}>
-                        <Badge badgeContent={badgeInfo?.count} color="primary">
-                            <Icon
+                        <Badge
+                            badgeContent={badgeInfo?.count}
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    backgroundColor: KOTATSU_COLORS.badge,
+                                    color: '#fff',
+                                    fontSize: '0.65rem',
+                                    minWidth: 18,
+                                    height: 18,
+                                },
+                            }}
+                        >
+                            <Box
                                 sx={{
-                                    color: isActive ? 'primary.dark' : undefined,
-                                    ...theme.applyStyles('dark', {
-                                        color: isActive ? 'primary.light' : undefined,
-                                    }),
-                                }}
-                            />
-                        </Badge>
-                    </ListItemIcon>
-
-                    <ListItemText
-                        primary={
-                            <TypographyMaxLines
-                                lines={1}
-                                variant={isCollapsed ? 'caption' : undefined}
-                                sx={{
-                                    color: isActive ? 'primary.dark' : undefined,
-                                    ...theme.applyStyles('dark', {
-                                        color: isActive ? 'primary.light' : undefined,
-                                    }),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: KOTATSU_RADIUS.navPill,
+                                    px: kotatsuMobileStyle && isActive ? 2 : 1,
+                                    py: kotatsuMobileStyle ? 0.75 : 0,
+                                    backgroundColor:
+                                        kotatsuMobileStyle && isActive ? KOTATSU_COLORS.navActive : 'transparent',
                                 }}
                             >
-                                {t(title)}
-                            </TypographyMaxLines>
-                        }
-                        secondary={
-                            !isCollapsed && (
-                                <Typography variant="caption" color="textSecondary">
-                                    {badgeInfo?.title}
-                                </Typography>
-                            )
-                        }
-                        sx={{ maxWidth: '100%', m: 0, display: 'flex', flexDirection: 'column' }}
-                    />
+                                <Icon
+                                    sx={{
+                                        color: isActive ? KOTATSU_COLORS.textPrimary : KOTATSU_COLORS.textSecondary,
+                                        fontSize: kotatsuMobileStyle ? 24 : undefined,
+                                        ...(!kotatsuMobileStyle &&
+                                            theme.applyStyles('dark', {
+                                                color: isActive ? 'primary.light' : undefined,
+                                            })),
+                                    }}
+                                />
+                            </Box>
+                        </Badge>
+                    </ListItemIcon>
                 </ListItem>
             </CustomTooltip>
         </ListItemLink>

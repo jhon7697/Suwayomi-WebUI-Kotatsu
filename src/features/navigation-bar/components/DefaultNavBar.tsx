@@ -102,6 +102,12 @@ export function DefaultNavBar() {
         setNavBarWidth(0);
     }, [isMobileWidth]);
 
+    useLayoutEffect(() => {
+        if (isMobileWidth && isMainRoute) {
+            setAppBarHeight(0);
+        }
+    }, [isMobileWidth, isMainRoute, setAppBarHeight]);
+
     // Allow default navbar to be overrided
     if (override.status) {
         return override.value;
@@ -109,67 +115,73 @@ export function DefaultNavBar() {
 
     return (
         <>
-            <AppBar
-                ref={appBarRef}
-                sx={{
-                    position: 'fixed',
-                    marginLeft: actualNavBarWidth,
-                    pt: 'env(safe-area-inset-top)',
-                    width: `calc(100% - ${actualNavBarWidth}px)`,
-                    zIndex: theme.zIndex.drawer,
-                }}
-            >
-                <Toolbar sx={{ position: 'relative' }}>
-                    {!isMobileWidth && (
+            {!(isMobileWidth && isMainRoute) && (
+                <AppBar
+                    ref={appBarRef}
+                    sx={{
+                        position: 'fixed',
+                        marginLeft: actualNavBarWidth,
+                        pt: 'env(safe-area-inset-top)',
+                        width: `calc(100% - ${actualNavBarWidth}px)`,
+                        zIndex: theme.zIndex.drawer,
+                    }}
+                >
+                    <Toolbar sx={{ position: 'relative' }}>
+                        {!isMobileWidth && (
+                            <Stack
+                                sx={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    width: `calc(${navBarWidth}px + env(safe-area-inset-left))`,
+                                    ...(!isCollapsed && { display: 'none' }),
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <IconButton
+                                    aria-label="open drawer"
+                                    onClick={() => setIsCollapsed(false)}
+                                    color="inherit"
+                                >
+                                    <MenuIcon />
+                                </IconButton>
+                            </Stack>
+                        )}
                         <Stack
                             sx={{
-                                position: 'absolute',
-                                left: 0,
-                                width: `calc(${navBarWidth}px + env(safe-area-inset-left))`,
-                                ...(!isCollapsed && { display: 'none' }),
+                                ml: `${isCollapsed ? navBarWidth : 0}px`,
+                                width: `calc(100% - (${isCollapsed ? navBarWidth : 0}px + env(safe-area-inset-left)))`,
+                                flexDirection: 'row',
                                 alignItems: 'center',
                             }}
                         >
-                            <IconButton aria-label="open drawer" onClick={() => setIsCollapsed(false)} color="inherit">
-                                <MenuIcon />
-                            </IconButton>
-                        </Stack>
-                    )}
-                    <Stack
-                        sx={{
-                            ml: `${isCollapsed ? navBarWidth : 0}px`,
-                            width: `calc(100% - (${isCollapsed ? navBarWidth : 0}px + env(safe-area-inset-left)))`,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                        }}
-                    >
-                        {!isMainRoute && (
-                            <IconButton
-                                edge="start"
-                                component="button"
-                                sx={{ marginRight: 2 }}
-                                aria-label="menu"
-                                onClick={handleBack}
-                                color="inherit"
+                            {!isMainRoute && (
+                                <IconButton
+                                    edge="start"
+                                    component="button"
+                                    sx={{ marginRight: 2 }}
+                                    aria-label="menu"
+                                    onClick={handleBack}
+                                    color="inherit"
+                                >
+                                    {getOptionForDirection(<ArrowBack />, <ArrowForwardIcon />)}
+                                </IconButton>
+                            )}
+                            <Typography
+                                variant="h5"
+                                component="h1"
+                                noWrap
+                                sx={{
+                                    textOverflow: 'ellipsis',
+                                    flexGrow: 1,
+                                }}
                             >
-                                {getOptionForDirection(<ArrowBack />, <ArrowForwardIcon />)}
-                            </IconButton>
-                        )}
-                        <Typography
-                            variant="h5"
-                            component="h1"
-                            noWrap
-                            sx={{
-                                textOverflow: 'ellipsis',
-                                flexGrow: 1,
-                            }}
-                        >
-                            {title}
-                        </Typography>
-                        {action}
-                    </Stack>
-                </Toolbar>
-            </AppBar>
+                                {title}
+                            </Typography>
+                            {action}
+                        </Stack>
+                    </Toolbar>
+                </AppBar>
+            )}
             {!isMobileWidth || isMainRoute ? navBar : null}
         </>
     );

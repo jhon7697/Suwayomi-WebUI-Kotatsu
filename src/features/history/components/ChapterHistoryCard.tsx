@@ -8,52 +8,74 @@
 
 import Box from '@mui/material/Box';
 import CardActionArea from '@mui/material/CardActionArea';
-import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
 import { Link } from 'react-router-dom';
 import { memo } from 'react';
-import { DownloadStateIndicator } from '@/base/components/downloads/DownloadStateIndicator.tsx';
 import type { ChapterHistoryListFieldsFragment } from '@/lib/graphql/generated/graphql.ts';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
-import { Chapters } from '@/features/chapter/services/Chapters.ts';
-import { epochToDate, timeFormatter } from '@/base/utils/DateHelper.ts';
-import { ChapterCardThumbnail } from '@/features/chapter/components/cards/ChapterCardThumbnail.tsx';
-import { ChapterCardMetadata } from '@/features/chapter/components/cards/ChapterCardMetadata.tsx';
-import { ChapterDownloadButton } from '@/features/chapter/components/buttons/ChapterDownloadButton.tsx';
-import { ChapterDownloadRetryButton } from '@/features/chapter/components/buttons/ChapterDownloadRetryButton.tsx';
-import { ListCardContent } from '@/base/components/lists/cards/ListCardContent';
+import { Mangas } from '@/features/manga/services/Mangas.ts';
+import { SpinnerImage } from '@/base/components/SpinnerImage.tsx';
+import { KOTATSU_COLORS, KOTATSU_RADIUS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
 
 export const ChapterHistoryCard = memo(({ chapter }: { chapter: ChapterHistoryListFieldsFragment }) => {
     const { manga } = chapter;
 
     return (
-        <Card>
+        <Box sx={{ px: 2, py: 0.75 }}>
             <CardActionArea
                 component={Link}
-                to={AppRoutes.reader.path(chapter.manga.id, chapter.sourceOrder)}
-                state={Chapters.getReaderOpenChapterLocationState(chapter)}
+                to={AppRoutes.manga.path(manga.id)}
                 sx={{
-                    color: (theme) => theme.palette.text[chapter.isRead ? 'disabled' : 'primary'],
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    borderRadius: KOTATSU_RADIUS.card,
+                    p: 0.5,
                 }}
             >
-                <ListCardContent sx={{ justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', flexGrow: 1, gap: 1 }}>
-                        <ChapterCardThumbnail
-                            mangaId={manga.id}
-                            sourceId={manga.sourceId}
-                            mangaTitle={manga.title}
-                            thumbnailUrl={manga.thumbnailUrl}
-                            thumbnailUrlLastFetched={manga.thumbnailUrlLastFetched}
-                        />
-                        <ChapterCardMetadata
-                            title={manga.title}
-                            secondaryText={`${chapter.name} — ${timeFormatter.format(epochToDate(Number(chapter.lastReadAt)).valueOf())}`}
-                        />
-                    </Box>
-                    <DownloadStateIndicator chapterId={chapter.id} />
-                    <ChapterDownloadRetryButton chapterId={chapter.id} />
-                    <ChapterDownloadButton chapterId={chapter.id} isDownloaded={chapter.isDownloaded} />
-                </ListCardContent>
+                <Box
+                    sx={{
+                        width: 56,
+                        height: 72,
+                        borderRadius: KOTATSU_RADIUS.card,
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                    }}
+                >
+                    <SpinnerImage
+                        alt={manga.title}
+                        src={Mangas.getThumbnailUrl(manga)}
+                        imgStyle={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                        }}
+                    />
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                        noWrap
+                        sx={{
+                            color: KOTATSU_COLORS.textPrimary,
+                            fontWeight: 500,
+                            fontSize: '0.95rem',
+                        }}
+                    >
+                        {manga.title}
+                    </Typography>
+                    <Typography
+                        noWrap
+                        sx={{
+                            color: KOTATSU_COLORS.textSecondary,
+                            fontSize: '0.8rem',
+                            mt: 0.25,
+                        }}
+                    >
+                        {chapter.name}
+                    </Typography>
+                </Box>
             </CardActionArea>
-        </Card>
+        </Box>
     );
 });

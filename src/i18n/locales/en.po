@@ -129,13 +129,13 @@ msgstr "{0} / {1}{2}"
 msgid "{0}% | Updating…"
 msgstr "{0}% | Updating…"
 
-#: src/features/navigation-bar/NavigationBar.constants.ts
-msgid "{availableUpdates, plural, one {# update available} other {# updates available}}"
-msgstr "{availableUpdates, plural, one {# update available} other {# updates available}}"
-
 #: src/features/library/screens/LibrarySettings.tsx
 msgid "{categoryCount, plural, one {# category} other {# categories}}"
 msgstr "{categoryCount, plural, one {# category} other {# categories}}"
+
+#: src/features/navigation-bar/NavigationBar.constants.ts
+msgid "{count, plural, one {# update} other {# updates}}"
+msgstr "{count, plural, one {# update} other {# updates}}"
 
 #: src/features/manga/Manga.constants.ts
 msgid "{count, plural, one {Changed categories of manga} other {Changed categories of # manga}}"
@@ -289,6 +289,10 @@ msgstr "{currentAutoUpdateIntervalHours}h"
 msgid "{currentDownloadAheadLimit, plural, one {# Chapter} other {# Chapters}}"
 msgstr "{currentDownloadAheadLimit, plural, one {# Chapter} other {# Chapters}}"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "{enabledSources} of {totalSources} on"
+msgstr "{enabledSources} of {totalSources} on"
+
 #: src/features/chapter/components/ChapterList.tsx
 #: src/features/chapter/components/MissingChaptersInfoSeparator.tsx
 msgid "{missingChapterCount, plural, one {Missing # chapter} other {Missing # chapters}}"
@@ -347,6 +351,7 @@ msgstr "Aborted"
 
 #: src/features/navigation-bar/NavigationBar.constants.ts
 #: src/features/settings/screens/About.tsx
+#: src/features/settings/screens/Settings.tsx
 msgid "About"
 msgstr "About"
 
@@ -558,9 +563,12 @@ msgid "Background color"
 msgstr "Background color"
 
 #: src/features/backup/screens/Backup.tsx
-#: src/features/settings/screens/Settings.tsx
 msgid "Backup"
 msgstr "Backup"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Backup and restore"
+msgstr "Backup and restore"
 
 #: src/features/backup/screens/Backup.tsx
 msgid "Backup cleanup"
@@ -627,6 +635,10 @@ msgstr "Bookmark selected"
 msgid "Bookmarked"
 msgstr "Bookmarked"
 
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+msgid "Bookmarks"
+msgstr "Bookmarks"
+
 #: src/features/reader/settings/layout/components/ReaderSettingTapZoneInvertMode.tsx
 msgid "Both"
 msgstr "Both"
@@ -652,10 +664,7 @@ msgstr "Briefly show tap zone layout preview when reader is opened or layout got
 msgid "Bright Pink"
 msgstr "Bright Pink"
 
-#: src/features/browse/screens/Browse.tsx
 #: src/features/browse/screens/BrowseSettings.tsx
-#: src/features/navigation-bar/NavigationBar.constants.ts
-#: src/features/settings/screens/Settings.tsx
 msgid "Browse"
 msgstr "Browse"
 
@@ -742,8 +751,13 @@ msgstr "Cancel"
 msgid "Cancelled"
 msgstr "Cancelled"
 
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+msgid "Catalog"
+msgstr "Catalog"
+
 #: src/features/backup/Backup.constants.ts
 #: src/features/library/screens/LibrarySettings.tsx
+#: src/features/navigation-bar/NavigationBar.constants.ts
 #: src/features/settings/screens/More.tsx
 msgid "Categories"
 msgstr "Categories"
@@ -829,6 +843,10 @@ msgstr "Chapters"
 msgid "Check description"
 msgstr "Check description"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "Check for new chapters"
+msgstr "Check for new chapters"
+
 #: src/features/settings/components/globalUpdate/GlobalUpdateSettings.tsx
 msgid "Check for new cover and details when updating library"
 msgstr "Check for new cover and details when updating library"
@@ -906,6 +924,7 @@ msgstr "Compact grid"
 msgid "Compatible"
 msgstr "Compatible"
 
+#: src/features/kotatsu-ui/components/KotatsuFilterChips.tsx
 #: src/features/manga/Manga.constants.ts
 msgid "Completed"
 msgstr "Completed"
@@ -930,6 +949,8 @@ msgstr "Connected as {currentUsername} to {currentServerAddress}"
 msgid "Connected as {initialUsername} to {initialServerAddress}"
 msgstr "Connected as {initialUsername} to {initialServerAddress}"
 
+#: src/features/kotatsu-ui/components/KotatsuContinueFab.tsx
+#: src/features/kotatsu-ui/components/KotatsuMangaBottomBar.tsx
 #: src/features/migration/components/MigrationContinueButton.tsx
 msgid "Continue"
 msgstr "Continue"
@@ -1158,6 +1179,10 @@ msgstr "Create"
 msgid "Create backup"
 msgstr "Create backup"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "Create or restore a backup, Periodic backups"
+msgstr "Create or restore a backup, Periodic backups"
+
 #: src/features/theme/components/CreateThemeButton.tsx
 #: src/features/theme/components/CreateThemeDialog.tsx
 msgid "Create theme"
@@ -1346,7 +1371,6 @@ msgid "Destination - {0}"
 msgstr "Destination - {0}"
 
 #: src/features/device/screens/DeviceSetting.tsx
-#: src/features/settings/screens/Settings.tsx
 msgid "Device"
 msgstr "Device"
 
@@ -1462,10 +1486,15 @@ msgid "Downloading"
 msgstr "Downloading"
 
 #: src/features/downloads/screens/DownloadSettings.tsx
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
 #: src/features/navigation-bar/NavigationBar.constants.ts
 #: src/features/settings/screens/Settings.tsx
 msgid "Downloads"
 msgstr "Downloads"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Downloads folder, Download only via Wi-Fi"
+msgstr "Downloads folder, Download only via Wi-Fi"
 
 #: src/features/migration/components/MigrationDestinationSourceList.tsx
 msgid "Drag to prioritize"
@@ -1579,6 +1608,12 @@ msgid "Exit to previous page"
 msgstr "Exit to previous page"
 
 #: src/features/browse/screens/Browse.tsx
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+#: src/features/navigation-bar/NavigationBar.constants.ts
+msgid "Explore"
+msgstr "Explore"
+
+#: src/features/browse/screens/Browse.tsx
 msgid "Extension"
 msgstr "Extension"
 
@@ -1634,6 +1669,11 @@ msgstr "Failed to disconnect from KOReader Sync server."
 #: src/features/tracker/screens/TrackingSettings.tsx
 msgid "Failed to save changes"
 msgstr "Failed to save changes"
+
+#: src/features/library/screens/Library.tsx
+#: src/features/navigation-bar/NavigationBar.constants.ts
+msgid "Favorites"
+msgstr "Favorites"
 
 #: src/features/settings/Settings.constants.ts
 msgid ""
@@ -1836,7 +1876,6 @@ msgstr "Hikari connection pool"
 #: src/features/history/screens/History.tsx
 #: src/features/history/screens/HistorySettings.tsx
 #: src/features/navigation-bar/NavigationBar.constants.ts
-#: src/features/settings/screens/Settings.tsx
 msgid "History"
 msgstr "History"
 
@@ -1912,7 +1951,6 @@ msgid "Image serve processing"
 msgstr "Image serve processing"
 
 #: src/features/settings/screens/ImagesSettings.tsx
-#: src/features/settings/screens/Settings.tsx
 msgid "Images"
 msgstr "Images"
 
@@ -2076,6 +2114,10 @@ msgstr "Kindle"
 msgid "KOReader Sync"
 msgstr "KOReader Sync"
 
+#: src/features/theme/Themes.ts
+msgid "Kotatsu"
+msgstr "Kotatsu"
+
 #: src/features/reader/settings/layout/components/ReaderSettingTapZoneLayout.tsx
 msgid "L-Shape"
 msgstr "L-Shape"
@@ -2150,10 +2192,7 @@ msgid "legacy backups are not supported!"
 msgstr "legacy backups are not supported!"
 
 #: src/features/backup/Backup.constants.ts
-#: src/features/library/screens/Library.tsx
 #: src/features/library/screens/LibrarySettings.tsx
-#: src/features/navigation-bar/NavigationBar.constants.ts
-#: src/features/settings/screens/Settings.tsx
 msgid "Library"
 msgstr "Library"
 
@@ -2212,6 +2251,10 @@ msgstr "Local source guide"
 msgid "Local source location"
 msgstr "Local source location"
 
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+msgid "Local storage"
+msgstr "Local storage"
+
 #: src/features/settings/screens/ServerSettings.tsx
 msgid "Log file cleanup"
 msgstr "Log file cleanup"
@@ -2248,6 +2291,10 @@ msgstr "Logging in to {trackerName}…"
 msgid "Long strip"
 msgstr "Long strip"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "Look for updates, Notifications settings"
+msgstr "Look for updates, Notifications settings"
+
 #: src/features/device/screens/DeviceSetting.tsx
 msgid ""
 "Manage your existing devices.\n"
@@ -2268,6 +2315,11 @@ msgstr "Manga"
 #: src/features/settings/screens/Appearance.tsx
 msgid "Manga item width"
 msgstr "Manga item width"
+
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+#: src/features/settings/screens/Settings.tsx
+msgid "Manga sources"
+msgstr "Manga sources"
 
 #: src/features/settings/screens/Appearance.tsx
 msgid "Manga thumbnail as background"
@@ -2433,7 +2485,6 @@ msgstr "Mobile"
 msgid "Modern"
 msgstr "Modern"
 
-#: src/features/navigation-bar/NavigationBar.constants.ts
 #: src/features/settings/screens/More.tsx
 msgid "More"
 msgstr "More"
@@ -2464,6 +2515,10 @@ msgstr "Never"
 #: src/features/category/components/CreateOrEditCategoryDialog.tsx
 msgid "New category"
 msgstr "New category"
+
+#: src/features/kotatsu-ui/components/KotatsuFilterChips.tsx
+msgid "New chapters"
+msgstr "New chapters"
 
 #: src/features/reader/tap-zones/ReaderTapZone.constants.ts
 msgid "Next"
@@ -2604,6 +2659,10 @@ msgstr "Offset double spreads"
 #: src/features/tracker/components/cards/TrackerActiveCard.tsx
 msgid "Ok"
 msgstr "Ok"
+
+#: src/features/kotatsu-ui/components/KotatsuFilterChips.tsx
+msgid "On device"
+msgstr "On device"
 
 #: src/features/tracker/Tracker.constants.ts
 msgid "Oneshot"
@@ -2803,14 +2862,25 @@ msgstr "Queued"
 msgid "Quick settings"
 msgstr "Quick settings"
 
-#: src/features/reader/settings/screens/GlobalReaderSettings.tsx
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+msgid "Random"
+msgstr "Random"
+
 #: src/features/settings/screens/Settings.tsx
+msgid "Read mode, Scale mode, Switch pages"
+msgstr "Read mode, Scale mode, Switch pages"
+
+#: src/features/reader/settings/screens/GlobalReaderSettings.tsx
 msgid "Reader"
 msgstr "Reader"
 
 #: src/features/reader/screens/Reader.tsx
 msgid "Reader — Manga {mangaId} Chapter {chapterSourceOrder}"
 msgstr "Reader — Manga {mangaId} Chapter {chapterSourceOrder}"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Reader settings"
+msgstr "Reader settings"
 
 #: src/features/reader/settings/layout/components/ReaderSettingWidth.tsx
 msgid "Reader width"
@@ -3053,6 +3123,10 @@ msgstr ""
 "Search for a ID via \"id:<ID>\" (e.g. \"id:13\")\n"
 "Limit search to your lists via \"my:<Title>\" (e.g. \"my:One Piece\")"
 
+#: src/features/kotatsu-ui/components/KotatsuSearchBar.tsx
+msgid "Search manga"
+msgstr "Search manga"
+
 #: src/features/migration/components/MigrationBulkSearchOptionsDialog.tsx
 msgid "Search options"
 msgstr "Search options"
@@ -3140,7 +3214,6 @@ msgstr "Series settings"
 
 #: src/features/settings/screens/About.tsx
 #: src/features/settings/screens/ServerSettings.tsx
-#: src/features/settings/screens/Settings.tsx
 msgid "Server"
 msgstr "Server"
 
@@ -3171,6 +3244,10 @@ msgstr "Server version {0} ({1}) available for download"
 #: src/features/app-updates/components/ServerUpdateChecker.tsx
 msgid "Server was updated to version {version} ({0})"
 msgstr "Server was updated to version {version} ({0})"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Services"
+msgstr "Services"
 
 #: src/features/theme/components/CreateThemeDialog.tsx
 msgid "Set as active theme"
@@ -3371,6 +3448,10 @@ msgstr "Source Configuration"
 msgid "Source entry - {sourceTitle}"
 msgstr "Source entry - {sourceTitle}"
 
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
+msgid "Source presets"
+msgstr "Source presets"
+
 #: src/features/chapter/components/ChapterOptions.tsx
 msgid "Source title"
 msgstr "Source title"
@@ -3438,6 +3519,14 @@ msgstr "Stop"
 msgid "Stop global update"
 msgstr "Stop global update"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "Storage and network"
+msgstr "Storage and network"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Storage usage, Proxy, Content preloading"
+msgstr "Storage usage, Proxy, Content preloading"
+
 #: src/features/reader/overlay/navigation/desktop/quick-settings/components/ReaderNavBarDesktopPageScale.tsx
 #: src/features/reader/settings/layout/components/ReaderSettingStretchPage.tsx
 msgid "Stretch small pages"
@@ -3459,6 +3548,18 @@ msgstr "Successfully migrated"
 #: src/features/manga/Manga.constants.ts
 msgid "Successfully migrated manga"
 msgstr "Successfully migrated manga"
+
+#: src/features/navigation-bar/NavigationBar.constants.ts
+msgid "Suggestions"
+msgstr "Suggestions"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Suggestions, Synchronization, Tracking"
+msgstr "Suggestions, Synchronization, Tracking"
+
+#: src/features/settings/screens/Settings.tsx
+msgid "Suwayomi WebUI"
+msgstr "Suwayomi WebUI"
 
 #: src/features/settings/components/koreaderSync/KoreaderSyncSettings.tsx
 msgid "Sync status"
@@ -3584,6 +3685,10 @@ msgstr "Theme"
 msgid "Theme mode"
 msgstr "Theme mode"
 
+#: src/features/settings/screens/Settings.tsx
+msgid "Theme, List mode, Language"
+msgstr "Theme, List mode, Language"
+
 #: src/features/reader/viewer/components/ReaderTransitionPage.tsx
 msgid "There is no next chapter"
 msgstr "There is no next chapter"
@@ -3690,7 +3795,6 @@ msgstr "Trackers"
 #: src/features/backup/Backup.constants.ts
 #: src/features/manga/components/TrackMangaButton.tsx
 #: src/features/migration/components/MigrationOptionsDialog.tsx
-#: src/features/settings/screens/Settings.tsx
 #: src/features/tracker/screens/TrackingSettings.tsx
 msgid "Tracking"
 msgstr "Tracking"
@@ -3720,6 +3824,7 @@ msgstr "UI Login"
 #: src/features/global-search/screens/SearchAll.tsx
 #: src/features/history/screens/History.tsx
 #: src/features/history/screens/HistorySettings.tsx
+#: src/features/kotatsu-ui/screens/KotatsuExplore.tsx
 #: src/features/library/screens/Library.tsx
 #: src/features/library/screens/LibraryDuplicates.tsx
 #: src/features/library/screens/LibrarySettings.tsx
@@ -3924,7 +4029,6 @@ msgid "Webtoon"
 msgstr "Webtoon"
 
 #: src/features/settings/screens/About.tsx
-#: src/features/settings/screens/Settings.tsx
 #: src/features/settings/screens/WebUISettings.tsx
 #: src/features/settings/Settings.constants.ts
 msgid "WebUI"
