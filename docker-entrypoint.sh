@@ -3,7 +3,9 @@ set -e
 
 PORT="${PORT:-4567}"
 SUWAYOMI_PORT="4568"
-DATA_DIR="/app/data"
+
+# Running as root → data dir is /root/.local/share/Tachidesk
+DATA_DIR="/root/.local/share/Tachidesk"
 
 echo "============================================"
 echo "[Kotatsu] Starting Kotatsu Web"
@@ -13,14 +15,25 @@ echo "============================================"
 
 # Verify WebUI build
 if [ ! -f "/app/kotatsu-webui/index.html" ]; then
-    echo "[Kotatsu] FATAL: Kotatsu WebUI build missing!"
-    ls -la /app/kotatsu-webui/ 2>/dev/null || echo "  (directory not found)"
+    echo "[Kotatsu] FATAL: WebUI build missing!"
+    ls -la /app/kotatsu-webui/ 2>/dev/null
     exit 1
 fi
 echo "[Kotatsu] ✓ WebUI: $(find /app/kotatsu-webui -type f | wc -l) files"
 
-# Suwayomi data directory
+# Write server.conf to CORRECT location (where Suwayomi actually reads it)
 mkdir -p "${DATA_DIR}"
+cat > "${DATA_DIR}/server.conf" << CONF
+server {
+    port = ${SUWAYOMI_PORT}
+    webUIEnabled = false
+    webUIUpdateCheckInterval = 0
+    initialOpenInBrowserEnabled = false
+    systemTrayEnabled = false
+}
+CONF
+echo "[Kotatsu] ✓ server.conf written to ${DATA_DIR}/server.conf"
+echo "[Kotatsu]   port=${SUWAYOMI_PORT}, webUIEnabled=false"
 
 # Write nginx config
 cat > /etc/nginx/http.d/default.conf << NGINXEOF
@@ -33,7 +46,7 @@ server {
 
     client_max_body_size 100M;
 
-    # All /api requests → Suwayomi
+    # All /api requests → Suwayomi backend
     location /api/ {
         proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
         proxy_http_version 1.1;
@@ -48,7 +61,7 @@ server {
         proxy_read_timeout 300s;
     }
 
-    # SPA fallback
+    # SPA fallback — all other routes serve index.html
     location / {
         try_files \$uri \$uri/ /index.html;
     }
@@ -60,49 +73,23 @@ server {
     }
 }
 NGINXEOF
+echo "[Kotatsu] ✓ nginx config written (listen ${PORT}, proxy to ${SUWAYOMI_PORT})"
 
-echo "[Kotatsu] ✓ nginx config written"
+# Test nginx config
+nginx -t 2>&1 || { echo "[Kotatsu] FATAL: nginx config invalid!"; exit 1; }
+echo "[Kotatsu] ✓ nginx config test passed"
 
-# Start Suwayomi-Server in background (API-only, no WebUI)
-echo "[Kotatsu] Starting Suwayomi-Server (API-only)..."
-java ${JAVA_OPTS} \
-    -Dsuwayomi.server.port="${SUWAYOMI_PORT}" \
-    -Dsuwayomi.server.webUIEnabled=false \
-    -Dsuwayomi.server.initialOpenInBrowserEnabled=false \
-    -Dsuwayomi.server.systemTrayEnabled=false \
-    -Dsuwayomi.server.rootDir="${DATA_DIR}" \
-    -jar /app/suwayomi-server.jar &
-SERVER_PID=$!
-
-# Start nginx
+# Start nginx first (so Railway sees a listener immediately)
 echo "[Kotatsu] Starting nginx..."
-nginx -g "daemon off;" &
-NGINX_PID=$!
+nginx
+echo "[Kotatsu] ✓ nginx started"
 
-# Quick check
-sleep 2
-if kill -0 $NGINX_PID 2>/dev/null; then
-    echo "[Kotatsu] ✓ nginx running (PID: ${NGINX_PID})"
-else
-    echo "[Kotatsu] ✗ nginx FAILED to start"
-    cat /var/log/nginx/error.log 2>/dev/null
-    exit 1
-fi
-
-if kill -0 $SERVER_PID 2>/dev/null; then
-    echo "[Kotatsu] ✓ Suwayomi running (PID: ${SERVER_PID})"
-else
-    echo "[Kotatsu] ✗ Suwayomi FAILED to start"
-    exit 1
-fi
-
+# Start Suwayomi-Server (foreground — keeps container alive)
+echo "[Kotatsu] Starting Suwayomi-Server..."
 echo "============================================"
 echo "[Kotatsu] ✓ Kotatsu Web is LIVE!"
 echo "[Kotatsu]   http://0.0.0.0:${PORT}"
 echo "============================================"
 
-# Handle shutdown
-trap "kill $NGINX_PID $SERVER_PID 2>/dev/null; exit 0" INT TERM
-
-# Wait for either to exit
-wait -n $SERVER_PID $NGINX_PID 2>/dev/null || wait $SERVER_PID
+exec java ${JAVA_OPTS} \
+    -jar /app/suwayomi-server.jar
