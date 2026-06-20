@@ -35,10 +35,11 @@ CONF
 echo "[Kotatsu] ✓ server.conf written to ${DATA_DIR}/server.conf"
 echo "[Kotatsu]   port=${SUWAYOMI_PORT}, webUIEnabled=false"
 
-# Write nginx config
+# Write nginx config (listen on PORT + 4567 as fallback)
 cat > /etc/nginx/http.d/default.conf << NGINXEOF
 server {
     listen ${PORT};
+    listen 4567;
     server_name _;
 
     root /app/kotatsu-webui;
@@ -81,8 +82,23 @@ echo "[Kotatsu] ✓ nginx config test passed"
 
 # Start nginx first (so Railway sees a listener immediately)
 echo "[Kotatsu] Starting nginx..."
-nginx
-echo "[Kotatsu] ✓ nginx started"
+nginx 2>&1
+NGINX_STATUS=$?
+if [ $NGINX_STATUS -ne 0 ]; then
+    echo "[Kotatsu] FATAL: nginx failed to start (exit code: $NGINX_STATUS)"
+    cat /var/log/nginx/error.log 2>/dev/null
+    exit 1
+fi
+echo "[Kotatsu] ✓ nginx started (listening on ${PORT} and 4567)"
+
+# Quick verify nginx is actually serving files
+sleep 1
+HTTP_CODE=$(curl -so /dev/null -w '%{http_code}' http://127.0.0.1:${PORT}/ 2>/dev/null || echo "000")
+echo "[Kotatsu] ✓ nginx health check: HTTP ${HTTP_CODE}"
+if [ "$HTTP_CODE" = "000" ]; then
+    echo "[Kotatsu] WARNING: nginx not responding on port ${PORT}"
+    cat /var/log/nginx/error.log 2>/dev/null
+fi
 
 # Start Suwayomi-Server (foreground — keeps container alive)
 echo "[Kotatsu] Starting Suwayomi-Server..."
