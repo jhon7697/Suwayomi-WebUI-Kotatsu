@@ -1,6 +1,5 @@
 # ============================================
 # Kotatsu Web - Nginx + Suwayomi Server
-# nginx serves Kotatsu UI, proxies API to Suwayomi
 # ============================================
 
 # Stage 1: Build Kotatsu WebUI
@@ -27,37 +26,31 @@ RUN if [ "$SUWAYOMI_VERSION" = "latest" ]; then \
     fi && \
     curl -L -o /suwayomi-server.jar "$DOWNLOAD_URL"
 
-# Stage 3: Runtime (Java + nginx)
+# Stage 3: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="kotatsu-web"
 LABEL description="Kotatsu manga reader - nginx serves UI, Suwayomi handles API"
 
-RUN apk add --no-cache tzdata curl tini nginx
+RUN apk add --no-cache tzdata curl tini nginx && \
+    mkdir -p /run/nginx /var/log/nginx /tmp/nginx && \
+    chown -R root:root /run/nginx /var/log/nginx /tmp/nginx
 
-RUN addgroup -g 1000 suwayomi && \
-    adduser -u 1000 -G suwayomi -h /home/suwayomi -D suwayomi && \
-    # Let suwayomi user run nginx
-    mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy /tmp/nginx-fastcgi /tmp/nginx-uwsgi /tmp/nginx-scgi && \
-    chown -R suwayomi:suwayomi /tmp/nginx-* /var/lib/nginx /var/log/nginx
-
-WORKDIR /home/suwayomi
+WORKDIR /app
 
 COPY --from=server-fetcher /suwayomi-server.jar ./suwayomi-server.jar
 COPY --from=webui-builder /app/build ./kotatsu-webui
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-RUN chmod +x /docker-entrypoint.sh && \
-    chown -R suwayomi:suwayomi /home/suwayomi
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 4567
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-4567} || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+    CMD curl -sf http://localhost:${PORT:-4567}/ || exit 1
 
 ENV TZ=UTC
 ENV JAVA_OPTS="-Xmx512m"
 
-USER suwayomi
+# Run as root — nginx needs it on Alpine
 ENTRYPOINT ["tini", "--"]
 CMD ["/docker-entrypoint.sh"]
