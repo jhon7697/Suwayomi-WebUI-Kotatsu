@@ -1,114 +1,145 @@
 #!/bin/sh
 set -e
 
-TACHIDESK_ROOT="/home/suwayomi/.local/share/Tachidesk"
-WEBUI_TARGET="${TACHIDESK_ROOT}/webUI/Suwayomi-WebUI"
-KOTATSU_SOURCE="/home/suwayomi/kotatsu-webui"
 PORT="${PORT:-4567}"
+SUWAYOMI_PORT="4568"
 
 echo "============================================"
-echo "[Kotatsu] Kotatsu Web Startup"
+echo "[Kotatsu] Starting Kotatsu Web"
 echo "============================================"
 
-mkdir -p "${TACHIDESK_ROOT}"
+# Create Suwayomi data dir
+mkdir -p /home/suwayomi/.local/share/Tachidesk
 
-# Verify Kotatsu build exists
-if [ ! -d "${KOTATSU_SOURCE}" ] || [ ! -f "${KOTATSU_SOURCE}/index.html" ]; then
-    echo "[Kotatsu] ERROR: Kotatsu WebUI build not found!"
-    ls -la "${KOTATSU_SOURCE}/" 2>/dev/null || echo "  (directory missing)"
-    echo "[Kotatsu] Falling back to default Suwayomi WebUI"
-    exec java ${JAVA_OPTS} -Dsuwayomi.server.port="${PORT}" -jar /home/suwayomi/suwayomi-server.jar
+# Write Suwayomi config — disable its WebUI entirely
+cat > /home/suwayomi/.local/share/Tachidesk/server.conf << CONF
+server {
+    port = ${SUWAYOMI_PORT}
+    webUIEnabled = false
+    initialOpenInBrowserEnabled = false
+    systemTrayEnabled = false
+}
+CONF
+
+# Write nginx config — serve Kotatsu WebUI + proxy API to Suwayomi
+cat > /tmp/nginx.conf << NGINXCONF
+worker_processes auto;
+pid /tmp/nginx.pid;
+error_log /tmp/nginx-error.log warn;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    access_log /tmp/nginx-access.log;
+    
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 100M;
+    
+    # Temp paths (running as non-root)
+    client_body_temp_path /tmp/nginx-client-body;
+    proxy_temp_path /tmp/nginx-proxy;
+    fastcgi_temp_path /tmp/nginx-fastcgi;
+    uwsgi_temp_path /tmp/nginx-uwsgi;
+    scgi_temp_path /tmp/nginx-scgi;
+
+    server {
+        listen ${PORT};
+        server_name _;
+
+        # Serve Kotatsu WebUI static files
+        root /home/suwayomi/kotatsu-webui;
+        index index.html;
+
+        # API & GraphQL → proxy to Suwayomi
+        location /api/ {
+            proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
+            proxy_http_version 1.1;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_connect_timeout 300s;
+            proxy_send_timeout 300s;
+            proxy_read_timeout 300s;
+        }
+
+        # GraphQL endpoint
+        location /api/graphql {
+            proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_connect_timeout 300s;
+            proxy_send_timeout 300s;
+            proxy_read_timeout 300s;
+        }
+
+        # WebSocket support for subscriptions
+        location /api/graphql/subscription {
+            proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host \$host;
+        }
+
+        # Manga images/thumbnails
+        location /api/v1/ {
+            proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
+            proxy_http_version 1.1;
+            proxy_set_header Host \$host;
+            proxy_cache_valid 200 7d;
+        }
+
+        # SPA fallback — serve index.html for all other routes
+        location / {
+            try_files \$uri \$uri/ /index.html;
+        }
+    }
+}
+NGINXCONF
+
+# Verify Kotatsu WebUI exists
+if [ -f "/home/suwayomi/kotatsu-webui/index.html" ]; then
+    FILE_COUNT=$(find /home/suwayomi/kotatsu-webui -type f | wc -l)
+    echo "[Kotatsu] ✓ WebUI verified: ${FILE_COUNT} files"
+else
+    echo "[Kotatsu] ✗ ERROR: index.html not found!"
+    ls -la /home/suwayomi/kotatsu-webui/ 2>/dev/null || echo "  (directory missing)"
+    exit 1
 fi
 
-FILE_COUNT=$(find "${KOTATSU_SOURCE}" -type f | wc -l)
-echo "[Kotatsu] Kotatsu build verified: ${FILE_COUNT} files"
-
-# ============================================
-# Strategy: Start Suwayomi (it extracts default UI),
-# then immediately replace with Kotatsu.
-# The server serves static files from disk so
-# replacing them takes effect immediately.
-# ============================================
-
-# Start Suwayomi in background
-echo "[Kotatsu] Starting Suwayomi-Server in background..."
+# Start Suwayomi-Server in background (API only, no WebUI)
+echo "[Kotatsu] Starting Suwayomi-Server (API on port ${SUWAYOMI_PORT})..."
 java ${JAVA_OPTS} \
-    -Dsuwayomi.server.port="${PORT}" \
-    -Dsuwayomi.server.webUIEnabled=true \
-    -Dsuwayomi.server.webUIChannel=bundled \
-    -Dsuwayomi.server.webUIUpdateCheckInterval=0 \
+    -Dsuwayomi.server.port="${SUWAYOMI_PORT}" \
+    -Dsuwayomi.server.webUIEnabled=false \
     -Dsuwayomi.server.initialOpenInBrowserEnabled=false \
     -Dsuwayomi.server.systemTrayEnabled=false \
     -jar /home/suwayomi/suwayomi-server.jar &
 
 SERVER_PID=$!
 
-# Wait for server to be ready (max 120 seconds)
-echo "[Kotatsu] Waiting for server to start..."
-TRIES=0
-MAX_TRIES=120
-while [ $TRIES -lt $MAX_TRIES ]; do
-    if curl -sf "http://localhost:${PORT}/api/graphql" -X POST \
-        -H "Content-Type: application/json" \
-        -d '{"query":"{ aboutServer { name } }"}' > /dev/null 2>&1; then
-        echo "[Kotatsu] ✓ Server is ready (took ${TRIES}s)"
-        break
-    fi
-    
-    # Check if server process died
-    if ! kill -0 $SERVER_PID 2>/dev/null; then
-        echo "[Kotatsu] ERROR: Server process died"
-        exit 1
-    fi
-    
-    TRIES=$((TRIES + 1))
-    sleep 1
-done
-
-if [ $TRIES -ge $MAX_TRIES ]; then
-    echo "[Kotatsu] WARNING: Server didn't respond in ${MAX_TRIES}s, replacing WebUI anyway"
-fi
-
-# Small extra delay to ensure WebUI extraction is complete
-sleep 2
-
-# ============================================
-# NOW replace the default WebUI with Kotatsu
-# ============================================
-echo "[Kotatsu] Replacing default Suwayomi WebUI with Kotatsu..."
-
-if [ -d "${WEBUI_TARGET}" ]; then
-    rm -rf "${WEBUI_TARGET}"
-    echo "[Kotatsu] ✓ Removed default WebUI"
-fi
-
-cp -r "${KOTATSU_SOURCE}" "${WEBUI_TARGET}"
-
-if [ -f "${WEBUI_TARGET}/index.html" ]; then
-    echo "[Kotatsu] ✓ Kotatsu WebUI installed successfully!"
-    echo "[Kotatsu] ✓ ${FILE_COUNT} files at ${WEBUI_TARGET}"
-else
-    echo "[Kotatsu] ERROR: Installation failed - index.html missing"
-fi
-
-# Write config to prevent future re-downloads
-cat > "${TACHIDESK_ROOT}/server.conf" << 'CONF'
-server {
-    webUIEnabled = true
-    webUIChannel = "bundled"
-    webUIUpdateCheckInterval = 0
-    initialOpenInBrowserEnabled = false
-    systemTrayEnabled = false
-}
-CONF
+# Start nginx (serves our Kotatsu WebUI)
+echo "[Kotatsu] Starting nginx (Kotatsu WebUI on port ${PORT})..."
+nginx -c /tmp/nginx.conf &
+NGINX_PID=$!
 
 echo "============================================"
 echo "[Kotatsu] ✓ Kotatsu Web is live!"
-echo "[Kotatsu] URL: http://0.0.0.0:${PORT}"
+echo "[Kotatsu]   WebUI:  http://0.0.0.0:${PORT}"
+echo "[Kotatsu]   API:    http://0.0.0.0:${SUWAYOMI_PORT}"
 echo "============================================"
 
-# Forward signals to server process
-trap "kill $SERVER_PID 2>/dev/null" INT TERM
+# Handle shutdown gracefully
+trap "kill $NGINX_PID $SERVER_PID 2>/dev/null; exit 0" INT TERM
 
-# Wait for server process
-wait $SERVER_PID
+# Wait for either process to exit
+wait $SERVER_PID $NGINX_PID

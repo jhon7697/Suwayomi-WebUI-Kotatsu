@@ -1,5 +1,6 @@
 # ============================================
-# Kotatsu Web - Suwayomi Server + Kotatsu WebUI
+# Kotatsu Web - Nginx + Suwayomi Server
+# nginx serves Kotatsu UI, proxies API to Suwayomi
 # ============================================
 
 # Stage 1: Build Kotatsu WebUI
@@ -10,9 +11,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 COPY . .
 RUN pnpm build && \
-    echo "[Kotatsu] Build output:" && \
-    ls -la build/ && \
-    test -f build/index.html && echo "[Kotatsu] ✓ index.html exists" || (echo "[Kotatsu] ✗ index.html MISSING" && exit 1)
+    test -f build/index.html || (echo "BUILD FAILED: no index.html" && exit 1) && \
+    echo "Build OK: $(find build -type f | wc -l) files"
 
 # Stage 2: Download Suwayomi-Server
 FROM eclipse-temurin:21-jre-alpine AS server-fetcher
@@ -25,19 +25,21 @@ RUN if [ "$SUWAYOMI_VERSION" = "latest" ]; then \
       DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/Suwayomi/Suwayomi-Server/releases/tags/v${SUWAYOMI_VERSION}" \
         | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' | head -1); \
     fi && \
-    echo "Downloading: $DOWNLOAD_URL" && \
     curl -L -o /suwayomi-server.jar "$DOWNLOAD_URL"
 
-# Stage 3: Runtime
+# Stage 3: Runtime (Java + nginx)
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="kotatsu-web"
-LABEL description="Kotatsu manga reader - Suwayomi Server with Kotatsu WebUI"
+LABEL description="Kotatsu manga reader - nginx serves UI, Suwayomi handles API"
 
-RUN apk add --no-cache tzdata curl tini
+RUN apk add --no-cache tzdata curl tini nginx
 
 RUN addgroup -g 1000 suwayomi && \
-    adduser -u 1000 -G suwayomi -h /home/suwayomi -D suwayomi
+    adduser -u 1000 -G suwayomi -h /home/suwayomi -D suwayomi && \
+    # Let suwayomi user run nginx
+    mkdir -p /tmp/nginx-client-body /tmp/nginx-proxy /tmp/nginx-fastcgi /tmp/nginx-uwsgi /tmp/nginx-scgi && \
+    chown -R suwayomi:suwayomi /tmp/nginx-* /var/lib/nginx /var/log/nginx
 
 WORKDIR /home/suwayomi
 
@@ -50,7 +52,7 @@ RUN chmod +x /docker-entrypoint.sh && \
 
 EXPOSE 4567
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -f http://localhost:${PORT:-4567} || exit 1
 
 ENV TZ=UTC
