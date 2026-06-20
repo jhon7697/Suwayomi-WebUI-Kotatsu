@@ -1,0 +1,12 @@
+node_modules
+.git
+build
+dist
+*.log
+.env*
+.vscode
+.idea
+*.md
+!README.md
+deploy/
+docker-compose.yml

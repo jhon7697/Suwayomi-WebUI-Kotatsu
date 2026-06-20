@@ -4,10 +4,10 @@
 
 # Stage 1: Build Kotatsu WebUI
 FROM node:24-alpine AS webui-builder
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
-RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+RUN corepack install && pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build && \
     test -f build/index.html || (echo "BUILD FAILED: no index.html" && exit 1) && \
