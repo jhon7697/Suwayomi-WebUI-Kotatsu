@@ -1,5 +1,4 @@
 # Railway-specific Dockerfile
-# Railway provides PORT env var
 
 # Stage 1: Build Kotatsu WebUI
 FROM node:24-alpine AS webui-builder
@@ -27,13 +26,7 @@ WORKDIR /home/suwayomi
 COPY --from=server-fetcher /suwayomi-server.jar ./suwayomi-server.jar
 COPY --from=webui-builder /app/build ./kotatsu-webui
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-# Pre-install Kotatsu WebUI + write config
 RUN chmod +x /docker-entrypoint.sh && \
-    mkdir -p /home/suwayomi/.local/share/Tachidesk/webUI/Suwayomi-WebUI && \
-    cp -r ./kotatsu-webui/* /home/suwayomi/.local/share/Tachidesk/webUI/Suwayomi-WebUI/ && \
-    printf 'server {\n  webUIEnabled = true\n  webUIChannel = "bundled"\n  webUIUpdateCheckInterval = 0\n  initialOpenInBrowserEnabled = false\n  systemTrayEnabled = false\n}\n' \
-      > /home/suwayomi/.local/share/Tachidesk/server.conf && \
     chown -R suwayomi:suwayomi /home/suwayomi
 
 EXPOSE ${PORT:-4567}
