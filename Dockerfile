@@ -10,9 +10,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 COPY . .
 RUN pnpm build && \
-    echo "[Kotatsu] WebUI build output:" && \
+    echo "[Kotatsu] Build output:" && \
     ls -la build/ && \
-    echo "[Kotatsu] Files count: $(find build -type f | wc -l)"
+    test -f build/index.html && echo "[Kotatsu] ✓ index.html exists" || (echo "[Kotatsu] ✗ index.html MISSING" && exit 1)
 
 # Stage 2: Download Suwayomi-Server
 FROM eclipse-temurin:21-jre-alpine AS server-fetcher
@@ -41,21 +41,17 @@ RUN addgroup -g 1000 suwayomi && \
 
 WORKDIR /home/suwayomi
 
-# Copy server JAR and Kotatsu WebUI build
 COPY --from=server-fetcher /suwayomi-server.jar ./suwayomi-server.jar
 COPY --from=webui-builder /app/build ./kotatsu-webui
-
-# Copy entrypoint
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
 
-# Fix ownership (NO VOLUME declaration — let entrypoint handle everything)
-RUN chown -R suwayomi:suwayomi /home/suwayomi
+RUN chmod +x /docker-entrypoint.sh && \
+    chown -R suwayomi:suwayomi /home/suwayomi
 
 EXPOSE 4567
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:4567 || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-4567} || exit 1
 
 ENV TZ=UTC
 ENV JAVA_OPTS="-Xmx512m"
