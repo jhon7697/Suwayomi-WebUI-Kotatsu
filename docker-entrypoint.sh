@@ -3,8 +3,6 @@ set -e
 
 PORT="${PORT:-4567}"
 SUWAYOMI_PORT="4568"
-
-# Running as root → data dir is /root/.local/share/Tachidesk
 DATA_DIR="/root/.local/share/Tachidesk"
 
 echo "============================================"
@@ -16,12 +14,11 @@ echo "============================================"
 # Verify WebUI build
 if [ ! -f "/app/kotatsu-webui/index.html" ]; then
     echo "[Kotatsu] FATAL: WebUI build missing!"
-    ls -la /app/kotatsu-webui/ 2>/dev/null
     exit 1
 fi
 echo "[Kotatsu] ✓ WebUI: $(find /app/kotatsu-webui -type f | wc -l) files"
 
-# Write server.conf to CORRECT location (where Suwayomi actually reads it)
+# Write Suwayomi server.conf
 mkdir -p "${DATA_DIR}"
 cat > "${DATA_DIR}/server.conf" << CONF
 server {
@@ -32,13 +29,18 @@ server {
     systemTrayEnabled = false
 }
 CONF
-echo "[Kotatsu] ✓ server.conf written to ${DATA_DIR}/server.conf"
-echo "[Kotatsu]   port=${SUWAYOMI_PORT}, webUIEnabled=false"
+echo "[Kotatsu] ✓ server.conf → ${DATA_DIR}/server.conf"
 
-# Write nginx config (listen on PORT + 4567 as fallback)
-cat > /etc/nginx/http.d/default.conf << NGINXEOF
+# Write nginx config
+# IMPORTANT: Connection header must be conditional — only "upgrade" for WebSocket
+cat > /etc/nginx/http.d/default.conf << 'NGINXEOF'
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      '';
+}
+
 server {
-    listen ${PORT};
+    listen LISTEN_PORT;
     listen 4567;
     server_name _;
 
@@ -47,24 +49,24 @@ server {
 
     client_max_body_size 100M;
 
-    # All /api requests → Suwayomi backend
+    # API requests → Suwayomi (regular HTTP)
     location /api/ {
-        proxy_pass http://127.0.0.1:${SUWAYOMI_PORT};
+        proxy_pass http://127.0.0.1:SUWAYOMI_BACKEND_PORT;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_connect_timeout 300s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
     }
 
-    # SPA fallback — all other routes serve index.html
+    # SPA fallback
     location / {
-        try_files \$uri \$uri/ /index.html;
+        try_files $uri $uri/ /index.html;
     }
 
     # Cache static assets
@@ -74,38 +76,30 @@ server {
     }
 }
 NGINXEOF
-echo "[Kotatsu] ✓ nginx config written (listen ${PORT}, proxy to ${SUWAYOMI_PORT})"
+
+# Replace placeholders with actual port values
+sed -i "s/LISTEN_PORT/${PORT}/g" /etc/nginx/http.d/default.conf
+sed -i "s/SUWAYOMI_BACKEND_PORT/${SUWAYOMI_PORT}/g" /etc/nginx/http.d/default.conf
+
+echo "[Kotatsu] ✓ nginx config written"
 
 # Test nginx config
-nginx -t 2>&1 || { echo "[Kotatsu] FATAL: nginx config invalid!"; exit 1; }
-echo "[Kotatsu] ✓ nginx config test passed"
+nginx -t 2>&1 || { echo "[Kotatsu] FATAL: nginx config invalid!"; cat /var/log/nginx/error.log 2>/dev/null; exit 1; }
+echo "[Kotatsu] ✓ nginx config valid"
 
-# Start nginx first (so Railway sees a listener immediately)
-echo "[Kotatsu] Starting nginx..."
-nginx 2>&1
-NGINX_STATUS=$?
-if [ $NGINX_STATUS -ne 0 ]; then
-    echo "[Kotatsu] FATAL: nginx failed to start (exit code: $NGINX_STATUS)"
-    cat /var/log/nginx/error.log 2>/dev/null
-    exit 1
-fi
-echo "[Kotatsu] ✓ nginx started (listening on ${PORT} and 4567)"
+# Start nginx
+nginx 2>&1 || { echo "[Kotatsu] FATAL: nginx failed!"; exit 1; }
+echo "[Kotatsu] ✓ nginx started (ports: ${PORT}, 4567)"
 
-# Quick verify nginx is actually serving files
+# Quick health check
 sleep 1
 HTTP_CODE=$(curl -so /dev/null -w '%{http_code}' http://127.0.0.1:${PORT}/ 2>/dev/null || echo "000")
-echo "[Kotatsu] ✓ nginx health check: HTTP ${HTTP_CODE}"
-if [ "$HTTP_CODE" = "000" ]; then
-    echo "[Kotatsu] WARNING: nginx not responding on port ${PORT}"
-    cat /var/log/nginx/error.log 2>/dev/null
-fi
+echo "[Kotatsu] ✓ nginx check: HTTP ${HTTP_CODE}"
 
-# Start Suwayomi-Server (foreground — keeps container alive)
-echo "[Kotatsu] Starting Suwayomi-Server..."
 echo "============================================"
 echo "[Kotatsu] ✓ Kotatsu Web is LIVE!"
 echo "[Kotatsu]   http://0.0.0.0:${PORT}"
 echo "============================================"
 
-exec java ${JAVA_OPTS} \
-    -jar /app/suwayomi-server.jar
+# Start Suwayomi (foreground — keeps container alive)
+exec java ${JAVA_OPTS} -jar /app/suwayomi-server.jar
