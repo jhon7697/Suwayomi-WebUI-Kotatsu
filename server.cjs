@@ -20,48 +20,144 @@ const demoChapters = [
 ];
 
 function handleGraphQL(query, variables) {
-  // Simple field extraction
+  // Extract operation name
+  const opMatch = query.match(/(query|mutation)\s+(\w+)/);
+  const opName = opMatch ? opMatch[2] : '';
+  
+  // Map operation names to responses
+  const responses = {
+    GET_CATEGORIES_LIBRARY: {
+      categories: {
+        nodes: [
+          { id: 1, name: 'Reading', order: 0, default: false, mangas: { nodes: demoMangas.slice(0, 3), totalCount: 3, pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' } } },
+          { id: 2, name: 'Completed', order: 1, default: false, mangas: { nodes: demoMangas.slice(3, 5), totalCount: 2, pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' } } },
+          { id: 3, name: 'Plan to Read', order: 2, default: false, mangas: { nodes: [demoMangas[5]], totalCount: 1, pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' } } },
+        ],
+        totalCount: 3,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_CATEGORY_MANGAS: {
+      category: {
+        id: variables?.id || 1,
+        mangas: {
+          nodes: demoMangas,
+          totalCount: demoMangas.length,
+          pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+        }
+      }
+    },
+    GET_MANGA: {
+      manga: {
+        ...demoMangas[0],
+        chapters: { nodes: demoChapters, totalCount: demoChapters.length, pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' } }
+      }
+    },
+    GET_MANGA_SCREEN: {
+      manga: {
+        ...demoMangas[0],
+        chapters: { nodes: demoChapters, totalCount: demoChapters.length, pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' } }
+      }
+    },
+    GET_CHAPTERS_MANGA: {
+      chapters: {
+        nodes: demoChapters,
+        totalCount: demoChapters.length,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_CHAPTER: {
+      chapter: demoChapters[0]
+    },
+    GET_SOURCES: {
+      sources: {
+        nodes: [{ id: '1', name: 'MangaDex', lang: 'en', iconUrl: '', supportsLatest: true, isNsfw: false, displayName: 'MangaDex' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_EXTENSIONS: {
+      extensions: {
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_DOWNLOAD_STATUS: {
+      downloadStatus: { queue: [] }
+    },
+    GET_SERVER_SETTINGS: {
+      settings: {
+        autoDownloadNewChapters: false, autoDownloadNewChaptersLimit: 0, backupInterval: 1, backupPath: '', backupTTL: 14, backupTime: '00:00',
+        basicAuthEnabled: false, basicAuthPassword: '', basicAuthUsername: '', debugLogsEnabled: false, downloadAsCbz: false, downloadsPath: '',
+        electronPath: '', excludeCompletedEntriesFromDownload: false, excludeNotStartedEntriesFromDownload: false, extensionRepos: [],
+        flareSolverrEnabled: false, flareSolverrSessionName: '', flareSolverrSessionTtl: 15, flareSolverrTimeout: 60, flareSolverrUrl: '',
+        gqlDebugLogsEnabled: false, initialOpenInBrowserEnabled: false, ip: '0.0.0.0', localSourcePath: '', maxSourcesInParallel: 6, port: 4567,
+        socksProxyEnabled: false, socksProxyHost: '', socksProxyPassword: '', socksProxyPort: '', socksProxyUsername: '', systemTrayEnabled: false,
+        updateMangas: false, webUIChannel: 'STABLE', webUIEnabled: true, webUIFlavor: 'WEBUI', webUIInterface: 'BROWSER', webUIUpdateCheckInterval: 0
+      }
+    },
+    GET_ABOUT: {
+      about: {
+        aboutServer: { version: '1.0.0', revision: 'abc123', buildType: 'Stable' },
+        aboutWebUI: { channel: 'STABLE', tag: 'r1', updateTimestamp: Date.now() }
+      }
+    },
+    GET_GLOBAL_METADATAS: {
+      globalMeta: []
+    },
+    GET_MANGAS: {
+      mangas: {
+        nodes: demoMangas,
+        totalCount: demoMangas.length,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_CATEGORIES_BASE: {
+      categories: {
+        nodes: [
+          { id: 1, name: 'Reading', order: 0, default: false },
+          { id: 2, name: 'Completed', order: 1, default: false },
+          { id: 3, name: 'Plan to Read', order: 2, default: false },
+        ],
+        totalCount: 3,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+    GET_CATEGORIES_SETTINGS: {
+      categories: {
+        nodes: [
+          { id: 1, name: 'Reading', order: 0, default: false },
+          { id: 2, name: 'Completed', order: 1, default: false },
+          { id: 3, name: 'Plan to Read', order: 2, default: false },
+        ],
+        totalCount: 3,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
+  };
+  
+  if (responses[opName]) {
+    return responses[opName];
+  }
+  
+  // Fallback: try to extract root field
   const fieldMatch = query.match(/\{\s*(\w+)/);
   const rootField = fieldMatch ? fieldMatch[1] : '';
   
   switch(rootField) {
-    case 'categories':
-      return {
-        categories: {
-          nodes: [
-            { id: 1, name: 'Reading', order: 0, default: false, mangas: { nodes: demoMangas.slice(0, 3), totalCount: 3 } },
-            { id: 2, name: 'Completed', order: 1, default: false, mangas: { nodes: demoMangas.slice(3, 5), totalCount: 2 } },
-            { id: 3, name: 'Plan to Read', order: 2, default: false, mangas: { nodes: [demoMangas[5]], totalCount: 1 } },
-          ],
-          totalCount: 3,
-        }
-      };
-    case 'mangas':
-      return { mangas: { nodes: demoMangas, totalCount: demoMangas.length } };
-    case 'manga':
-      const manga = demoMangas.find(m => m.id === (variables?.id || 1));
-      return { manga: manga ? { ...manga, chapters: { nodes: demoChapters, totalCount: demoChapters.length } } : null };
-    case 'chapters':
-      const mangaId = variables?.filter?.mangaId || variables?.mangaId;
-      const chapters = mangaId ? demoChapters.filter(c => c.mangaId === mangaId) : demoChapters;
-      return { chapters: { nodes: chapters, totalCount: chapters.length } };
-    case 'chapter':
-      const chapter = demoChapters.find(c => c.id === (variables?.id || 1));
-      return { chapter: chapter || null };
-    case 'sources':
-      return { sources: { nodes: [{ id: '1', name: 'MangaDex', lang: 'en', iconUrl: '', supportsLatest: true, isNsfw: false, displayName: 'MangaDex' }], totalCount: 1 } };
-    case 'extensions':
-      return { extensions: { nodes: [], totalCount: 0 } };
-    case 'downloadStatus':
-      return { downloadStatus: { queue: [] } };
-    case 'settings':
-      return { settings: { autoDownloadNewChapters: false, autoDownloadNewChaptersLimit: 0, backupInterval: 1, backupPath: '', backupTTL: 14, backupTime: '00:00', basicAuthEnabled: false, basicAuthPassword: '', basicAuthUsername: '', debugLogsEnabled: false, downloadAsCbz: false, downloadsPath: '', electronPath: '', excludeCompletedEntriesFromDownload: false, excludeNotStartedEntriesFromDownload: false, extensionRepos: [], flareSolverrEnabled: false, flareSolverrSessionName: '', flareSolverrSessionTtl: 15, flareSolverrTimeout: 60, flareSolverrUrl: '', gqlDebugLogsEnabled: false, initialOpenInBrowserEnabled: false, ip: '0.0.0.0', localSourcePath: '', maxSourcesInParallel: 6, port: 4567, socksProxyEnabled: false, socksProxyHost: '', socksProxyPassword: '', socksProxyPort: '', socksProxyUsername: '', systemTrayEnabled: false, updateMangas: false, webUIChannel: 'STABLE', webUIEnabled: true, webUIFlavor: 'WEBUI', webUIInterface: 'BROWSER', webUIUpdateCheckInterval: 0 } };
-    case 'about':
-      return { about: { aboutServer: { version: '1.0.0', revision: 'abc123', buildType: 'Stable' }, aboutWebUI: { channel: 'STABLE', tag: 'r1', updateTimestamp: Date.now() } } };
-    case 'globalMeta':
-      return { globalMeta: [] };
-    default:
-      return { [rootField]: null };
+    case 'categories': return responses.GET_CATEGORIES_LIBRARY;
+    case 'mangas': return responses.GET_MANGAS;
+    case 'manga': return responses.GET_MANGA;
+    case 'chapters': return responses.GET_CHAPTERS_MANGA;
+    case 'chapter': return responses.GET_CHAPTER;
+    case 'sources': return responses.GET_SOURCES;
+    case 'extensions': return responses.GET_EXTENSIONS;
+    case 'downloadStatus': return responses.GET_DOWNLOAD_STATUS;
+    case 'settings': return responses.GET_SERVER_SETTINGS;
+    case 'about': return responses.GET_ABOUT;
+    case 'globalMeta': return responses.GET_GLOBAL_METADATAS;
+    default: return { [rootField]: null };
   }
 }
 
@@ -86,7 +182,6 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ data }));
       } catch (e) {
-        console.error('Error:', e);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ errors: [{ message: e.message }] }));
       }

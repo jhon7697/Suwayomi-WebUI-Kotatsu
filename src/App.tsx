@@ -8,7 +8,7 @@
 
 import CssBaseline from '@mui/material/CssBaseline';
 import type { PropsWithChildren } from 'react';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev';
 import { AwaitableComponent } from 'awaitable-component';
@@ -25,7 +25,6 @@ import { AuthManager } from '@/features/authentication/AuthManager.ts';
 import { MigrationFABIndicator } from '@/features/migration/components/MigrationFABIndicator.tsx';
 import { MigrationManager } from '@/features/migration/MigrationManager.ts';
 import { KotatsuRoutes } from '@/features/kotatsu-ui/KotatsuRoutes.tsx';
-import { SplashScreen } from '@/features/authentication/components/SplashScreen.tsx';
 
 if (import.meta.env.DEV) {
     // Adds messages only in a dev environment
@@ -44,20 +43,13 @@ const ScrollToTop = () => {
 };
 
 const InitializeGuard = ({ children }: PropsWithChildren) => {
-    const [isInitialized, setIsInitialized] = useState(false);
-
     useEffect(() => {
         // Fire initial requests in background without blocking render
         requestManager.getGlobalMeta().response.catch(noOp);
         requestManager.getServerSettings().response.catch(noOp);
-        setIsInitialized(true);
     }, []);
 
-    if (isInitialized) {
-        return children;
-    }
-
-    return <SplashScreen />;
+    return children;
 };
 
 const InitialBackgroundRequests = () => {
