@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { Route, Routes, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, Outlet, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 
 // Screens
@@ -23,11 +23,35 @@ import { KotatsuSettings } from '@/features/kotatsu-ui/screens/KotatsuSettings.t
 // Components
 import { KotatsuBottomNav } from '@/features/kotatsu-ui/components/KotatsuBottomNav.tsx';
 
+// Infrastructure imports kept for auth and existing routes
+import { LoginPage } from '@/features/authentication/screens/LoginPage.tsx';
+import { AuthManager } from '@/features/authentication/AuthManager.ts';
+import { AppRoutes } from '@/base/AppRoute.constants.ts';
+import { SearchParam } from '@/base/Base.types.ts';
+
+const PrivateRoutes = () => {
+    const isAuthenticated = AuthManager.useIsAuthenticated();
+
+    if (!isAuthenticated) {
+        return (
+            <Navigate
+                to={{
+                    pathname: AppRoutes.authentication.children.login.path,
+                    search: `${SearchParam.REDIRECT}=${window.location.pathname}`,
+                }}
+                replace
+            />
+        );
+    }
+
+    return <Outlet />;
+};
+
 const KotatsuAppLayout = () => {
     const location = useLocation();
     
-    // Hide bottom navigation on certain full-screen pages like Reader and Manga Details
-    const hideBottomNav = location.pathname.includes('/reader/') || location.pathname.includes('/manga/');
+    // Hide bottom navigation on full-screen pages (reader, manga details)
+    const hideBottomNav = location.pathname.match(/^\/manga\/\d+/) !== null;
 
     return (
         <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -42,19 +66,41 @@ const KotatsuAppLayout = () => {
 export const KotatsuRoutes = () => {
     return (
         <Routes>
-            <Route path="/kotatsu" element={<KotatsuAppLayout />}>
-                <Route path="library" element={<KotatsuLibrary />} />
-                <Route path="updates" element={<KotatsuUpdates />} />
-                <Route path="history" element={<KotatsuHistory />} />
-                <Route path="browse" element={<KotatsuExplore />} />
-                <Route path="more" element={<KotatsuMore />} />
-                
-                <Route path="manga/:id" element={<KotatsuMangaDetails />} />
-                <Route path="reader/:chapterId/:id" element={<KotatsuReader />} />
-                <Route path="settings" element={<KotatsuSettings />} />
-                
-                {/* Fallback to library */}
-                <Route path="*" element={<KotatsuLibrary />} />
+            {/* Auth route — accessible without login */}
+            <Route path={AppRoutes.authentication.match}>
+                <Route path={AppRoutes.authentication.children.login.match} element={<LoginPage />} />
+            </Route>
+
+            {/* All other routes require authentication */}
+            <Route element={<PrivateRoutes />}>
+                {/* Reader route — full-screen, no layout wrapper */}
+                <Route path={AppRoutes.reader.match} element={<KotatsuReader />} />
+
+                {/* Routes with bottom navigation layout */}
+                <Route element={<KotatsuAppLayout />}>
+                    {/* Root redirect */}
+                    <Route path="/" element={<Navigate to="/library" replace />} />
+
+                    {/* Main tab screens */}
+                    <Route path={AppRoutes.library.match} element={<KotatsuLibrary />} />
+                    <Route path={AppRoutes.updates.match} element={<KotatsuUpdates />} />
+                    <Route path={AppRoutes.history.match} element={<KotatsuHistory />} />
+                    <Route path={AppRoutes.browse.match} element={<KotatsuExplore />} />
+                    <Route path={AppRoutes.more.match} element={<KotatsuMore />} />
+
+                    {/* Manga details */}
+                    <Route path={AppRoutes.manga.match} element={<KotatsuMangaDetails />} />
+
+                    {/* Settings */}
+                    <Route path={`${AppRoutes.settings.match}/*`} element={<KotatsuSettings />} />
+
+                    {/* Legacy source/extension routes — redirect to browse */}
+                    <Route path={AppRoutes.sources.match} element={<Navigate to="/browse" replace />} />
+                    <Route path={AppRoutes.extension.match} element={<Navigate to="/browse" replace />} />
+
+                    {/* Catch-all: redirect to library */}
+                    <Route path="*" element={<Navigate to="/library" replace />} />
+                </Route>
             </Route>
         </Routes>
     );

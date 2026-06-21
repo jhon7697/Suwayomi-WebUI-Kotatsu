@@ -75,9 +75,9 @@ const BaseKotatsuReader = () => {
 
     const [areSettingsSet, setAreSettingsSet] = useState(false);
 
-    const { chapterId, id } = useParams<{ chapterId: string; id: string }>();
-    const chapterSourceOrder = Number(chapterId); // Route parameter mappings
-    const mangaId = Number(id);
+    const params = useParams<{ mangaId: string; chapterSourceOrder: string }>();
+    const chapterSourceOrder = Number(params.chapterSourceOrder);
+    const mangaId = Number(params.mangaId);
 
     const mangaResponse = requestManager.useGetManga<GetMangaReaderQuery>(GET_MANGA_READER, mangaId);
     const chaptersResponse = requestManager.useGetMangaChapters<GetChaptersReaderQuery>(GET_CHAPTERS_READER, mangaId);

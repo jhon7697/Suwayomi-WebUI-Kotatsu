@@ -13,6 +13,8 @@ import Typography from '@mui/material/Typography';
 import ButtonBase from '@mui/material/ButtonBase';
 import CollectionsBookmarkOutlinedIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
+import NewReleasesOutlinedIcon from '@mui/icons-material/NewReleasesOutlined';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
 import ExploreIcon from '@mui/icons-material/Explore';
 import HistoryIcon from '@mui/icons-material/History';
@@ -102,6 +104,13 @@ export const KotatsuBottomNav = () => {
             matchPaths: ['/browse', '/sources', '/extensions'],
         },
         {
+            label: t`Updates`,
+            path: AppRoutes.updates.path,
+            icon: <NewReleasesOutlinedIcon sx={{ fontSize: 'inherit' }} />,
+            activeIcon: <NewReleasesIcon sx={{ fontSize: 'inherit' }} />,
+            matchPaths: ['/updates'],
+        },
+        {
             label: t`History`,
             path: AppRoutes.history.path,
             icon: <HistoryIcon sx={{ fontSize: 'inherit' }} />,
@@ -110,10 +119,10 @@ export const KotatsuBottomNav = () => {
         },
         {
             label: t`More`,
-            path: AppRoutes.settings.path,
+            path: AppRoutes.more.path,
             icon: <MoreHorizIcon sx={{ fontSize: 'inherit' }} />,
             activeIcon: <MoreHorizIcon sx={{ fontSize: 'inherit' }} />,
-            matchPaths: ['/settings', '/about'],
+            matchPaths: ['/more', '/settings', '/about'],
         },
     ];
 
