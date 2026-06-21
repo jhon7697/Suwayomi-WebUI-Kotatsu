@@ -8,27 +8,19 @@
 
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { SplashScreen } from '@/features/authentication/components/SplashScreen.tsx';
-import { requestManager } from '@/lib/requests/RequestManager.ts';
 import { AuthManager } from '@/features/authentication/AuthManager.ts';
+import { requestManager } from '@/lib/requests/RequestManager.ts';
 
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
-    const { isAuthRequired } = AuthManager.useSession();
-
     useEffect(() => {
         if (AuthManager.isAuthInitialized()) {
             return;
         }
 
-        // Default to no auth required — don't block UI on server check
         AuthManager.setAuthRequired(false);
         AuthManager.setAuthInitialized(true);
         requestManager.processQueues();
     }, []);
-
-    if (isAuthRequired === null) {
-        return <SplashScreen />;
-    }
 
     return children;
 };
