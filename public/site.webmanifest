@@ -1,6 +1,6 @@
 {
-    "name": "Suwayomi",
-    "short_name": "Suwayomi",
+    "name": "Kotatsu",
+    "short_name": "Kotatsu",
     "start_url": ".",
     "icons": [
         {
@@ -21,7 +21,7 @@
             "purpose": "maskable"
         }
     ],
-    "theme_color": "#3181C0",
-    "background_color": "#3181C0",
+    "theme_color": "#000000",
+    "background_color": "#000000",
     "display": "standalone"
 }
