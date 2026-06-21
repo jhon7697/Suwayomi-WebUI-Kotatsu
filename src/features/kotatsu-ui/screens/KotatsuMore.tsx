@@ -68,7 +68,7 @@ export const KotatsuMore = () => {
                     icon={<CloudDownloadOutlinedIcon />}
                     title={t`Downloads`}
                     subtitle={t`Automatic downloads, download ahead`}
-                    to={AppRoutes.settings.children.downloads.path}
+                    to={AppRoutes.settings.children.download.path}
                 />
 
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.06)', my: 1 }} />
@@ -119,7 +119,7 @@ export const KotatsuMore = () => {
                     icon={<InfoOutlinedIcon />}
                     title={t`About`}
                     subtitle={t`Version, licenses`}
-                    to={AppRoutes.settings.children.about.path}
+                    to={AppRoutes.about.path}
                 />
             </List>
         </Box>

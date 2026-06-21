@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React, { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import { useParams } from 'react-router-dom';
 import { useLingui } from '@lingui/react/macro';
@@ -207,7 +207,17 @@ const BaseKotatsuReader = () => {
             <ReaderRGBAFilter />
             <ReaderAutoScroll />
             <ReaderHotkeys scrollElementRef={scrollElementRef} />
-            <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}>
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                }}
+            >
                 <ReaderOverlay />
                 {!scrollElementRef.current && (
                     <Box

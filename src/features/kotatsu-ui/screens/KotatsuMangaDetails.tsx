@@ -7,7 +7,6 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import { useParams } from 'react-router-dom';
 import { useLingui } from '@lingui/react/macro';
@@ -20,7 +19,12 @@ import { KotatsuMangaHeader } from '@/features/kotatsu-ui/components/KotatsuMang
 import { KotatsuChapterItem } from '@/features/kotatsu-ui/components/KotatsuChapterItem.tsx';
 import { KotatsuMangaBottomBar } from '@/features/kotatsu-ui/components/KotatsuMangaBottomBar.tsx';
 import { GET_MANGA_SCREEN } from '@/lib/graphql/manga/MangaQuery.ts';
-import type { GetMangaScreenQuery } from '@/lib/graphql/generated/graphql.ts';
+import { GET_CHAPTERS_MANGA } from '@/lib/graphql/chapter/ChapterQuery.ts';
+import type {
+    GetMangaScreenQuery,
+    GetChaptersMangaQuery,
+    GetChaptersMangaQueryVariables,
+} from '@/lib/graphql/generated/graphql.ts';
 import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { useManageMangaLibraryState } from '@/features/manga/hooks/useManageMangaLibraryState.tsx';
 import { STABLE_EMPTY_ARRAY } from '@/base/Base.constants.ts';
@@ -29,14 +33,14 @@ export const KotatsuMangaDetails: React.FC = () => {
     const { t } = useLingui();
     const { id } = useParams<{ id: string }>();
 
-    const {
-        data,
-        error,
-        loading: isLoading,
-    } = requestManager.useGetManga<GetMangaScreenQuery>(GET_MANGA_SCREEN, id);
+    const { data, error, loading: isLoading } = requestManager.useGetManga<GetMangaScreenQuery>(GET_MANGA_SCREEN, id);
 
     const manga = data?.manga;
-    const chapters = manga?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
+    const chaptersResponse = requestManager.useGetMangaChapters<GetChaptersMangaQuery, GetChaptersMangaQueryVariables>(
+        GET_CHAPTERS_MANGA,
+        id,
+    );
+    const chapters = chaptersResponse.data?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
 
     const { updateLibraryState } = useManageMangaLibraryState(manga as any);
 
@@ -75,8 +79,6 @@ export const KotatsuMangaDetails: React.FC = () => {
                                 isBookmarked={chapter.isBookmarked}
                                 isDownloaded={chapter.isDownloaded}
                                 to={AppRoutes.reader.path(chapter.id, manga.id)}
-                                lastPageRead={chapter.lastPageRead}
-                                pageCount={chapter.pageCount}
                             />
                         ))}
                     </Stack>

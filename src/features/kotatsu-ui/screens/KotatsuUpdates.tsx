@@ -112,7 +112,7 @@ export const KotatsuUpdates: React.FC = () => {
                 computeItemKey={computeItemKey}
                 itemContent={(index) => {
                     const chapter = updateEntries[index];
-                    const manga = chapter.manga;
+                    const {manga} = chapter;
                     return (
                         <StyledGroupItemWrapper>
                             <KotatsuChapterItem
@@ -123,8 +123,8 @@ export const KotatsuUpdates: React.FC = () => {
                                 isBookmarked={chapter.isBookmarked}
                                 isDownloaded={chapter.isDownloaded}
                                 to={AppRoutes.reader.path(chapter.id, manga.id)}
-                                lastPageRead={chapter.lastPageRead}
-                                pageCount={chapter.pageCount}
+                                lastPageRead={undefined}
+                                pageCount={undefined}
                             />
                         </StyledGroupItemWrapper>
                     );

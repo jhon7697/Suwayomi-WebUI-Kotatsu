@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import { Link } from 'react-router-dom';
 import { KOTATSU_COLORS, KOTATSU_RADIUS } from '@/features/kotatsu-ui/Kotatsu.constants.ts';
@@ -47,11 +47,7 @@ export const KotatsuHistoryItem = ({
         }}
     >
         {/* Thumbnail */}
-        <ButtonBase
-            component={Link}
-            to={mangaLink}
-            sx={{ borderRadius: KOTATSU_RADIUS.card, flexShrink: 0 }}
-        >
+        <ButtonBase component={Link} to={mangaLink} sx={{ borderRadius: KOTATSU_RADIUS.card, flexShrink: 0 }}>
             <Box
                 component="img"
                 src={thumbnailUrl ?? ''}
@@ -105,22 +101,13 @@ export const KotatsuHistoryItem = ({
         {/* Actions */}
         <Stack direction="row" sx={{ alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
             {continueLink && (
-                <IconButton
-                    component={Link}
-                    to={continueLink}
-                    size="small"
-                    sx={{ color: KOTATSU_COLORS.textPrimary }}
-                >
+                <IconButton component={Link} to={continueLink} size="small" sx={{ color: KOTATSU_COLORS.textPrimary }}>
                     <PlayArrowIcon />
                 </IconButton>
             )}
             {onDelete && (
-                <IconButton
-                    onClick={onDelete}
-                    size="small"
-                    sx={{ color: KOTATSU_COLORS.textMuted }}
-                >
-                    <DeleteOutlineIcon fontSize="small" />
+                <IconButton onClick={onDelete} size="small" sx={{ color: KOTATSU_COLORS.textMuted }}>
+                    <DeleteOutlinedIcon fontSize="small" />
                 </IconButton>
             )}
         </Stack>

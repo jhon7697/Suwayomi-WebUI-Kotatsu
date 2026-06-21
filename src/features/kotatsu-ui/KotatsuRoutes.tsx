@@ -6,7 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from 'react';
+import type { FC } from 'react';
 import { Navigate, Route, Routes, Outlet, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 
@@ -49,7 +49,7 @@ const PrivateRoutes = () => {
 
 const KotatsuAppLayout = () => {
     const location = useLocation();
-    
+
     // Hide bottom navigation on full-screen pages (reader, manga details)
     const hideBottomNav = location.pathname.match(/^\/manga\/\d+/) !== null;
 
@@ -63,8 +63,7 @@ const KotatsuAppLayout = () => {
     );
 };
 
-export const KotatsuRoutes = () => {
-    return (
+export const KotatsuRoutes: FC = () => (
         <Routes>
             {/* Auth route — accessible without login */}
             <Route path={AppRoutes.authentication.match}>
@@ -104,4 +103,3 @@ export const KotatsuRoutes = () => {
             </Route>
         </Routes>
     );
-};
