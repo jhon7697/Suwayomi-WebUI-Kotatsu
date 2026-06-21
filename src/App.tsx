@@ -19,13 +19,13 @@ import { ServerUpdateChecker } from '@/features/app-updates/components/ServerUpd
 import { ErrorBoundary } from '@/base/components/feedback/ErrorBoundary.tsx';
 import { AuthGuard } from '@/features/authentication/components/AuthGuard.tsx';
 import { defaultPromiseErrorHandler } from '@/lib/DefaultPromiseErrorHandler.ts';
+import { noOp } from '@/lib/HelperFunctions.ts';
 import { ReactRouter } from '@/lib/react-router/ReactRouter.ts';
 import { AuthManager } from '@/features/authentication/AuthManager.ts';
 import { MigrationFABIndicator } from '@/features/migration/components/MigrationFABIndicator.tsx';
 import { MigrationManager } from '@/features/migration/MigrationManager.ts';
 import { KotatsuRoutes } from '@/features/kotatsu-ui/KotatsuRoutes.tsx';
 import { SplashScreen } from '@/features/authentication/components/SplashScreen.tsx';
-import { d } from 'koration';
 
 if (import.meta.env.DEV) {
     // Adds messages only in a dev environment
@@ -47,41 +47,9 @@ const InitializeGuard = ({ children }: PropsWithChildren) => {
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        type RequestConfig = [string, () => Promise<unknown>][];
-        type InFlightRequest = [string, Promise<unknown>];
-
-        const initialRequests: RequestConfig = [
-            ['globalMeta', () => requestManager.getGlobalMeta().response],
-            ['serverSettings', () => requestManager.getServerSettings().response],
-        ];
-
-        const executeRequests = async (requests: RequestConfig, timeout: number = d(5).seconds.inWholeMilliseconds) => {
-            const runningRequests = requests.map(([key, fn]) => [key, fn()] satisfies InFlightRequest);
-
-            const failedRequests = runningRequests.filter(async ([_, request]) => {
-                try {
-                    await request;
-
-                    return false;
-                } catch (e) {
-                    return true;
-                }
-            });
-
-            if (failedRequests.length) {
-                await new Promise((resolve) => {
-                    setTimeout(resolve, timeout);
-                });
-
-                return executeRequests(
-                    requests.filter(([key]) => !failedRequests.some(([k]) => k === key)),
-                    (timeout * 1.5) % d(2).minutes.inWholeMilliseconds,
-                );
-            }
-        };
-
-        executeRequests(initialRequests).catch(defaultPromiseErrorHandler('InitializeGuard'));
-
+        // Fire initial requests in background without blocking render
+        requestManager.getGlobalMeta().response.catch(noOp);
+        requestManager.getServerSettings().response.catch(noOp);
         setIsInitialized(true);
     }, []);
 

@@ -15,19 +15,16 @@ import { AuthManager } from '@/features/authentication/AuthManager.ts';
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
     const { isAuthRequired } = AuthManager.useSession();
 
-    const { data } = requestManager.useGetAbout({
-        skip: isAuthRequired !== null,
-    });
-
     useEffect(() => {
-        if (!data || AuthManager.isAuthInitialized()) {
+        if (AuthManager.isAuthInitialized()) {
             return;
         }
 
+        // Default to no auth required — don't block UI on server check
         AuthManager.setAuthRequired(false);
         AuthManager.setAuthInitialized(true);
         requestManager.processQueues();
-    }, [data]);
+    }, []);
 
     if (isAuthRequired === null) {
         return <SplashScreen />;
