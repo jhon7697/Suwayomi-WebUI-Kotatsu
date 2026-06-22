@@ -210,6 +210,13 @@ function handleGraphQL(query, variables) {
         pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
       }
     },
+    GET_MANGAS_LIBRARY: {
+      mangas: {
+        nodes: demoMangas,
+        totalCount: demoMangas.length,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: '', endCursor: '' }
+      }
+    },
     GET_CATEGORIES_BASE: {
       categories: {
         nodes: [
