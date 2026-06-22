@@ -48,7 +48,7 @@ export const KotatsuHistory: React.FC = () => {
     });
     const hasNextPage = !!chapterHistoryData?.chapters.pageInfo.hasNextPage;
     const endCursor = chapterHistoryData?.chapters.pageInfo.endCursor;
-    const readEntries = chapterHistoryData?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
+    const readEntries = chapterHistoryData?.chapters?.nodes ?? STABLE_EMPTY_ARRAY;
     const groupedHistory = useMemo(
         () => Object.entries(Chapters.groupByDate(readEntries, 'lastReadAt')),
         [readEntries],

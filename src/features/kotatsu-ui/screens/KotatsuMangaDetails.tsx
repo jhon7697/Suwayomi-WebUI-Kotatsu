@@ -40,7 +40,7 @@ export const KotatsuMangaDetails: React.FC = () => {
         GET_CHAPTERS_MANGA,
         id,
     );
-    const chapters = chaptersResponse.data?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
+    const chapters = chaptersResponse.data?.chapters?.nodes ?? STABLE_EMPTY_ARRAY;
 
     const { updateLibraryState } = useManageMangaLibraryState(manga as any);
 

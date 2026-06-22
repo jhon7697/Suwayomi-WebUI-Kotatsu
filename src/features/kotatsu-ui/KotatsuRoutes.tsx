@@ -30,20 +30,7 @@ import { AppRoutes } from '@/base/AppRoute.constants.ts';
 import { SearchParam } from '@/base/Base.types.ts';
 
 const PrivateRoutes = () => {
-    const isAuthenticated = AuthManager.useIsAuthenticated();
-
-    if (!isAuthenticated) {
-        return (
-            <Navigate
-                to={{
-                    pathname: AppRoutes.authentication.children.login.path,
-                    search: `${SearchParam.REDIRECT}=${window.location.pathname}`,
-                }}
-                replace
-            />
-        );
-    }
-
+    // Auth bypassed for demo - always allow access
     return <Outlet />;
 };
 

@@ -12,13 +12,13 @@ import { AuthManager } from '@/features/authentication/AuthManager.ts';
 import { requestManager } from '@/lib/requests/RequestManager.ts';
 
 export const AuthGuard = ({ children }: { children: ReactNode }) => {
-    useEffect(() => {
-        if (AuthManager.isAuthInitialized()) {
-            return;
-        }
-
+    // Set auth state synchronously on first render so PrivateRoutes doesn't redirect
+    if (!AuthManager.isAuthInitialized()) {
         AuthManager.setAuthRequired(false);
         AuthManager.setAuthInitialized(true);
+    }
+
+    useEffect(() => {
         requestManager.processQueues();
     }, []);
 

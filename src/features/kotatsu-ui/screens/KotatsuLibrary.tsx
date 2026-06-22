@@ -40,7 +40,7 @@ export const KotatsuLibrary: React.FC = () => {
         GET_CATEGORIES_LIBRARY,
     );
 
-    const tabsData = categoriesResponse?.categories.nodes.filter(
+    const tabsData = categoriesResponse?.categories?.nodes?.filter(
         (category) => category.id !== 0 || (category.id === 0 && category.mangas.totalCount),
     );
     const tabs = tabsData ?? STABLE_EMPTY_ARRAY;
@@ -54,7 +54,7 @@ export const KotatsuLibrary: React.FC = () => {
         error: mangaError,
     } = requestManager.useGetCategoryMangas(activeTab?.id, { skip: !activeTab });
     
-    const categoryMangas = categoryMangaResponse?.mangas.nodes ?? STABLE_EMPTY_ARRAY;
+    const categoryMangas = categoryMangaResponse?.mangas?.nodes ?? STABLE_EMPTY_ARRAY;
 
     if (tabsError) {
         return (

@@ -24,7 +24,7 @@ export const KotatsuContinueFab = () => {
         fetchPolicy: 'cache-first',
     });
 
-    const latestChapter = data?.chapters.nodes?.[0];
+    const latestChapter = data?.chapters?.nodes?.[0];
 
     if (!isMobileWidth || !latestChapter) {
         return null;

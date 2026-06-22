@@ -46,7 +46,7 @@ export const KotatsuUpdates: React.FC = () => {
     });
     const hasNextPage = !!chapterUpdateData?.chapters.pageInfo.hasNextPage;
     const endCursor = chapterUpdateData?.chapters.pageInfo.endCursor;
-    const updateEntries = chapterUpdateData?.chapters.nodes ?? STABLE_EMPTY_ARRAY;
+    const updateEntries = chapterUpdateData?.chapters?.nodes ?? STABLE_EMPTY_ARRAY;
     const groupedUpdates = useMemo(
         () => Object.entries(Chapters.groupByDate(updateEntries, 'fetchedAt')),
         [updateEntries],

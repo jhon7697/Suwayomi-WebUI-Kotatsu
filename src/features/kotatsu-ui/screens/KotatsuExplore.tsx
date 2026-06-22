@@ -105,7 +105,7 @@ export const KotatsuExplore = () => {
     } = useMetadataServerSettings();
 
     const { data, loading, error, refetch } = requestManager.useGetSourceList();
-    const sources = data?.sources.nodes ?? STABLE_EMPTY_ARRAY;
+    const sources = data?.sources?.nodes ?? STABLE_EMPTY_ARRAY;
 
     const pinnedSources = useMemo(
         () =>
